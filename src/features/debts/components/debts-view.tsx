@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AddDebtDialog } from "@/features/debts/components/add-debt-dialog";
+import { PayDebtDialog } from "@/features/debts/components/pay-debt-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
 import { formatCurrency, formatCompact, formatDate } from "@/lib/format";
@@ -128,6 +129,9 @@ export function DebtsView() {
                     <div className="mt-2 flex justify-between text-xs text-muted-foreground">
                       <span>{pct}% pago · {d.paidInstallments}/{d.installments} parcelas</span>
                       <span>vence {formatDate(d.dueDate)}</span>
+                    </div>
+                    <div className="mt-3">
+                      <PayDebtDialog debt={d} />
                     </div>
                   </CardContent>
                 </Card>

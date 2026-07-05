@@ -22,6 +22,7 @@ import {
   createMission,
   createTransaction,
   fetchSnapshot,
+  payDebt as payDebtServer,
   setPrimaryMission as setPrimaryMissionServer,
 } from "@/features/shared/actions";
 
@@ -37,6 +38,9 @@ interface FinancialState {
   addAccount: (acc: Omit<BankAccount, "id" | "createdAt">) => void;
   addTransaction: (tx: Omit<Transaction, "id">) => void;
   addDebt: (debt: Omit<Debt, "id" | "paidAmount" | "paidInstallments" | "status" | "history">) => void;
+  /** Regista um pagamento (parcial ou total) de uma dívida. Se `accountId` for
+   *  passado, debita o valor dessa conta e cria uma transação de despesa. */
+  payDebt: (debtId: string, amount: number, accountId?: string) => void;
   addGoal: (goal: Omit<Goal, "id" | "currentAmount" | "status">) => void;
   contributeToGoal: (goalId: string, amount: number) => void;
   addMission: (mission: Omit<Mission, "id" | "createdAt" | "status">) => void;
@@ -119,6 +123,60 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(createDebt(debt));
+        },
+
+        payDebt: (debtId, amount, accountId) => {
+          if (amount <= 0) return;
+          set((s) => {
+            const target = s.snapshot.debts.find((d) => d.id === debtId);
+            if (!target) return s;
+
+            // Nunca abate mais do que o valor em aberto.
+            const outstanding = target.totalAmount - target.paidAmount;
+            const applied = Math.min(amount, outstanding);
+            if (applied <= 0) return s;
+
+            const debts = s.snapshot.debts.map((d) => {
+              if (d.id !== debtId) return d;
+              const paidAmount = d.paidAmount + applied;
+              const installmentValue =
+                d.installments > 0 ? d.totalAmount / d.installments : d.totalAmount;
+              const paidInstallments =
+                paidAmount >= d.totalAmount
+                  ? d.installments
+                  : Math.min(d.installments, Math.round(paidAmount / installmentValue));
+              return {
+                ...d,
+                paidAmount,
+                paidInstallments,
+                status:
+                  paidAmount >= d.totalAmount ? ("pago" as const) : ("parcial" as const),
+                history: [...(d.history ?? []), { date: today(), amount: applied }],
+              };
+            });
+
+            let accounts = s.snapshot.accounts;
+            let transactions = s.snapshot.transactions;
+            if (accountId) {
+              accounts = accounts.map((a) =>
+                a.id === accountId ? { ...a, balance: a.balance - applied } : a,
+              );
+              const tx: Transaction = {
+                id: uid("tx"),
+                accountId,
+                type: "despesa",
+                amount: applied,
+                category: "outros",
+                description: `Pagamento — ${target.creditor}`,
+                date: today(),
+              };
+              transactions = [tx, ...transactions];
+            }
+
+            return { snapshot: { ...s.snapshot, debts, accounts, transactions } };
+          });
+
+          sync(payDebtServer({ debtId, amount, accountId, date: today() }));
         },
 
         addGoal: (goal) => {

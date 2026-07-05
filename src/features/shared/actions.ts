@@ -231,6 +231,59 @@ export async function applySalaryServer(params: {
   }
 }
 
+export async function payDebt(params: {
+  debtId: string;
+  amount: number;
+  accountId?: string;
+  date: string;
+}): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+
+  const { data } = await supabase
+    .from("debts")
+    .select("total_amount,paid_amount,installments,creditor")
+    .eq("id", params.debtId)
+    .maybeSingle();
+  if (!data) return;
+
+  const total = Number(data.total_amount);
+  const outstanding = total - Number(data.paid_amount);
+  const applied = Math.min(params.amount, outstanding);
+  if (applied <= 0) return;
+
+  const paid = Number(data.paid_amount) + applied;
+  const installments = Number(data.installments) || 0;
+  const installmentValue = installments > 0 ? total / installments : total;
+  const paidInstallments =
+    paid >= total
+      ? installments
+      : Math.min(installments, Math.round(paid / installmentValue));
+
+  await supabase
+    .from("debts")
+    .update({
+      paid_amount: paid,
+      paid_installments: paidInstallments,
+      status: paid >= total ? "pago" : "parcial",
+    })
+    .eq("id", params.debtId);
+
+  if (params.accountId) {
+    await supabase.from("transactions").insert({
+      user_id: user.id,
+      account_id: params.accountId,
+      type: "despesa",
+      amount: applied,
+      category: "outros",
+      description: `Pagamento — ${data.creditor ?? "dívida"}`,
+      date: params.date,
+      recurring: false,
+    });
+    await adjustBalance(params.accountId, -applied);
+  }
+}
+
 async function adjustBalance(accountId: string, delta: number) {
   const { supabase } = await ctx();
   const { data } = await supabase
