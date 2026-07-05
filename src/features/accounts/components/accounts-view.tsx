@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/shared/page-header";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { AddAccountDialog } from "@/features/accounts/components/add-account-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useMounted } from "@/hooks/use-financial-report";
@@ -40,7 +41,16 @@ export function AccountsView() {
       <PageHeader
         title="Contas"
         description={`Património distribuído · ${formatCurrency(total)} no total`}
-        action={<AddAccountDialog />}
+        action={
+          <>
+            <ClearAllButton
+              domain="accounts"
+              itemsLabel="todas as contas e transações"
+              count={accounts.length}
+            />
+            <AddAccountDialog />
+          </>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/shared/page-header";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
 import { useUIStore } from "@/store/ui-store";
@@ -34,9 +35,16 @@ export function SalaryView() {
         title="Salário"
         description="Configure os seus rendimentos e distribua cada salário com inteligência."
         action={
-          <Button className="gap-2" onClick={() => openWizard(true)}>
-            <Banknote className="size-4" /> Recebi salário
-          </Button>
+          <>
+            <ClearAllButton
+              domain="salaries"
+              itemsLabel="todos os salários configurados"
+              count={snapshot.salaries.length}
+            />
+            <Button className="gap-2" onClick={() => openWizard(true)}>
+              <Banknote className="size-4" /> Recebi salário
+            </Button>
+          </>
         }
       />
 

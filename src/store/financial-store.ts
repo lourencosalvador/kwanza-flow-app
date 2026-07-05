@@ -15,6 +15,7 @@ import { buildSeed } from "@/lib/mock/seed";
 import { uid } from "@/lib/utils";
 import {
   applySalaryServer,
+  clearDomain as clearDomainServer,
   contributeGoal,
   createAccount,
   createDebt,
@@ -25,6 +26,14 @@ import {
   payDebt as payDebtServer,
   setPrimaryMission as setPrimaryMissionServer,
 } from "@/features/shared/actions";
+
+/** Domínios que suportam "Limpar tudo" por página. */
+export type ClearableDomain =
+  | "accounts"
+  | "salaries"
+  | "debts"
+  | "goals"
+  | "missions";
 
 interface FinancialState {
   snapshot: FinancialSnapshot;
@@ -46,6 +55,8 @@ interface FinancialState {
   addMission: (mission: Omit<Mission, "id" | "createdAt" | "status">) => void;
   setPrimaryMission: (missionId: string) => void;
   applySalary: (received: number, allocation: SalaryAllocationResult) => void;
+  /** Apaga todos os dados de um domínio (por página). Ação destrutiva. */
+  clearDomain: (domain: ClearableDomain) => void;
   reset: () => void;
 }
 
@@ -314,6 +325,33 @@ export const useFinancialStore = create<FinancialState>()(
               date: today(),
             }),
           );
+        },
+
+        clearDomain: (domain) => {
+          set((s) => {
+            const snapshot = { ...s.snapshot };
+            switch (domain) {
+              case "accounts":
+                // Transações pertencem a contas — sem contas, ficam órfãs.
+                snapshot.accounts = [];
+                snapshot.transactions = [];
+                break;
+              case "salaries":
+                snapshot.salaries = [];
+                break;
+              case "debts":
+                snapshot.debts = [];
+                break;
+              case "goals":
+                snapshot.goals = [];
+                break;
+              case "missions":
+                snapshot.missions = [];
+                break;
+            }
+            return { snapshot };
+          });
+          sync(clearDomainServer(domain));
         },
 
         reset: () => set({ snapshot: buildSeed() }),

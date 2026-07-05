@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { AddMissionDialog } from "@/features/missions/components/add-mission-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
@@ -31,7 +32,12 @@ export function MissionsView() {
       <PageHeader
         title="Modo Missão"
         description="A sua missão guia cada decisão. O consultor acompanha-a em todo o sistema."
-        action={<AddMissionDialog />}
+        action={
+          <>
+            <ClearAllButton domain="missions" itemsLabel="todas as suas missões" count={missions.length} />
+            <AddMissionDialog />
+          </>
+        }
       />
 
       {missions.length === 0 ? (

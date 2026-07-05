@@ -284,6 +284,28 @@ export async function payDebt(params: {
   }
 }
 
+export async function clearDomain(
+  domain: "accounts" | "salaries" | "debts" | "goals" | "missions",
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+
+  const table = {
+    accounts: "accounts",
+    salaries: "salaries",
+    debts: "debts",
+    goals: "goals",
+    missions: "missions",
+  }[domain];
+
+  await supabase.from(table).delete().eq("user_id", user.id);
+
+  // Transações dependem de contas — limpa-as junto.
+  if (domain === "accounts") {
+    await supabase.from("transactions").delete().eq("user_id", user.id);
+  }
+}
+
 async function adjustBalance(accountId: string, delta: number) {
   const { supabase } = await ctx();
   const { data } = await supabase

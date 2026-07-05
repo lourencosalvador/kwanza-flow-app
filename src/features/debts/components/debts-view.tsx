@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { AddDebtDialog } from "@/features/debts/components/add-debt-dialog";
 import { PayDebtDialog } from "@/features/debts/components/pay-debt-dialog";
 import { useFinancialStore } from "@/store/financial-store";
@@ -45,7 +46,12 @@ export function DebtsView() {
       <PageHeader
         title="Dívidas"
         description="Acompanhe a evolução e siga a estratégia de quitação."
-        action={<AddDebtDialog />}
+        action={
+          <>
+            <ClearAllButton domain="debts" itemsLabel="todas as suas dívidas" count={debts.length} />
+            <AddDebtDialog />
+          </>
+        }
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

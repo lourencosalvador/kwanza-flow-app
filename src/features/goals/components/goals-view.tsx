@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { AddGoalDialog } from "@/features/goals/components/add-goal-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
@@ -47,7 +48,12 @@ export function GoalsView() {
       <PageHeader
         title="Metas"
         description="Defina objetivos e veja a previsão automática de conclusão."
-        action={<AddGoalDialog />}
+        action={
+          <>
+            <ClearAllButton domain="goals" itemsLabel="todas as suas metas" count={goals.length} />
+            <AddGoalDialog />
+          </>
+        }
       />
 
       {goals.length === 0 ? (
