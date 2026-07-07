@@ -53,7 +53,7 @@ export function MissionsView() {
           {primary && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <Card className="relative overflow-hidden border-primary/30 gap-0">
-                <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/15 blur-3xl" />
+                <div className="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/15 blur-3xl" />
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <Badge variant="default" className="gap-1">

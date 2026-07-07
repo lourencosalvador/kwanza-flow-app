@@ -13,7 +13,7 @@ const QUICK = [
 export function AdvisorTeaser() {
   return (
     <Card className="relative overflow-hidden gap-0">
-      <div className="absolute -left-6 -top-6 size-28 rounded-full bg-primary/15 blur-2xl" />
+      <div className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-primary/15 blur-2xl" />
       <CardContent className="p-5">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
           <Sparkles className="size-4" /> Consultor IA

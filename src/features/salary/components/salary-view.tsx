@@ -67,7 +67,7 @@ export function SalaryView() {
 
           {snapshot.salaries.map((s) => (
             <Card key={s.id} className="relative overflow-hidden gap-0">
-              <div className="absolute -right-8 -top-8 size-28 rounded-full bg-primary/10 blur-2xl" />
+              <div className="pointer-events-none absolute -right-8 -top-8 size-28 rounded-full bg-primary/10 blur-2xl" />
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <Badge variant={s.active ? "default" : "secondary"}>

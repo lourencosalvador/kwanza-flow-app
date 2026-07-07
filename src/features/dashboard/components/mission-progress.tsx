@@ -23,7 +23,7 @@ export function MissionProgress() {
 
   return (
     <Card className="relative overflow-hidden gap-0">
-      <div className="absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
+      <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-primary/10 blur-2xl" />
       <CardContent className="p-5">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
           <Flag className="size-4" /> Missão principal

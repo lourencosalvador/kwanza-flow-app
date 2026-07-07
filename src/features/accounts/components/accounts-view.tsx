@@ -82,7 +82,7 @@ export function AccountsView() {
             >
               <Card className="relative overflow-hidden gap-0">
                 <div
-                  className="absolute -right-6 -top-6 size-24 rounded-full opacity-15 blur-2xl"
+                  className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full opacity-15 blur-2xl"
                   style={{ backgroundColor: a.color }}
                 />
                 <CardContent className="p-5">
