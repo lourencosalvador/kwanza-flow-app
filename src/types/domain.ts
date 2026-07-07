@@ -215,6 +215,25 @@ export interface SmartNotification {
   href?: string;
 }
 
+/**
+ * Estratégia financeira definida pelo utilizador (dinâmica, opcional).
+ * Se `monthlySavingsTarget` for null, o sistema usa a capacidade teórica.
+ */
+export interface UserStrategy {
+  /** Capacidade PLANEADA: quanto o utilizador decide guardar por mês. */
+  monthlySavingsTarget: number | null;
+  /** Reservar a diferença (teórica − planeada) como margem de segurança. */
+  emergencyBufferEnabled: boolean;
+  /** Priorizar a missão principal nas recomendações da IA. */
+  optimizeForGoal: boolean;
+}
+
+export const DEFAULT_STRATEGY: UserStrategy = {
+  monthlySavingsTarget: null,
+  emergencyBufferEnabled: true,
+  optimizeForGoal: true,
+};
+
 export interface UserProfile {
   id: UUID;
   fullName: string;
@@ -223,6 +242,8 @@ export interface UserProfile {
   baseCurrency: CurrencyCode;
   /** Streak de registos consecutivos (gamificação). */
   streak: number;
+  /** Estratégia financeira do utilizador. */
+  strategy: UserStrategy;
 }
 
 /** Snapshot completo dos dados do utilizador entregue ao Motor Financeiro. */

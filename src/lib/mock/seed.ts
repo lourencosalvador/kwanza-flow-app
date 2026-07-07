@@ -27,6 +27,11 @@ export function buildSeed(ref: Date = new Date()): FinancialSnapshot {
     email: "lorrys@horizon-development.com",
     baseCurrency: "AOA" as const,
     streak: 12,
+    strategy: {
+      monthlySavingsTarget: null,
+      emergencyBufferEnabled: true,
+      optimizeForGoal: true,
+    },
   };
 
   const accounts = [
@@ -215,6 +220,11 @@ export function buildEmptySnapshot(): FinancialSnapshot {
       email: "",
       baseCurrency: "AOA",
       streak: 0,
+      strategy: {
+        monthlySavingsTarget: null,
+        emergencyBufferEnabled: true,
+        optimizeForGoal: true,
+      },
     },
     accounts: [],
     transactions: [],

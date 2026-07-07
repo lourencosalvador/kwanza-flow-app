@@ -2,7 +2,7 @@
 
 import { StatCard } from "@/components/shared/stat-card";
 import { useFinancialReport } from "@/hooks/use-financial-report";
-import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
+import { formatCompact, formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 
 export function SummaryGrid() {
   const r = useFinancialReport();
@@ -56,11 +56,13 @@ export function SummaryGrid() {
       accent: "default" as const,
     },
     {
-      label: "Capacidade / mês",
-      value: formatCurrency(r.cashFlow.monthlyCapacity),
+      label: "Capacidade planeada",
+      value: formatCurrency(r.cashFlow.plannedCapacity),
       icon: "Banknote",
       accent: "primary" as const,
-      hint: "para poupar",
+      hint: r.cashFlow.hasPlannedTarget
+        ? `teórica ${formatCompact(r.cashFlow.theoreticalCapacity)}`
+        : "para poupar/mês",
     },
   ];
 

@@ -12,6 +12,7 @@ import type {
   RecurringPayment,
   Salary,
   Transaction,
+  UserStrategy,
 } from "@/types/domain";
 import type { SalaryAllocationResult } from "@/lib/financial-engine/types";
 import { buildEmptySnapshot, buildSeed } from "@/lib/mock/seed";
@@ -46,6 +47,7 @@ import {
   updatePlan as updatePlanServer,
   updateRecurring as updateRecurringServer,
   updateSalary as updateSalaryServer,
+  updateStrategy as updateStrategyServer,
 } from "@/features/shared/actions";
 
 /** Domínios que suportam "Limpar tudo" por página. */
@@ -109,6 +111,9 @@ interface FinancialState {
   addPlan: (plan: Omit<Plan, "id" | "createdAt">) => void;
   updatePlan: (id: string, patch: Partial<Omit<Plan, "id" | "createdAt">>) => void;
   deletePlan: (id: string) => void;
+
+  // Estratégia financeira
+  updateStrategy: (patch: Partial<UserStrategy>) => void;
 
   // Salário (wizard)
   applySalary: (received: number, allocation: SalaryAllocationResult) => void;
@@ -505,6 +510,21 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(deletePlanServer(id));
+        },
+
+        // ── Estratégia financeira ─────────────────────────────
+        updateStrategy: (patch) => {
+          let next: UserStrategy;
+          set((s) => {
+            next = { ...s.snapshot.profile.strategy, ...patch };
+            return {
+              snapshot: {
+                ...s.snapshot,
+                profile: { ...s.snapshot.profile, strategy: next },
+              },
+            };
+          });
+          sync(updateStrategyServer(next!));
         },
 
         // ── Wizard de salário ─────────────────────────────────

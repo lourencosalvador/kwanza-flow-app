@@ -28,16 +28,16 @@ export function localAdvice(
   if (/(posso comprar|posso gastar|comprar isto|compro)/.test(q)) {
     const amount = detectAmount(q);
     if (amount) {
-      const fits = amount <= cashFlow.monthlyCapacity;
+      const fitsBuffer = amount <= cashFlow.safetyBuffer;
       const savingsImpact = formatPercent(amount / Math.max(1, netWorth.savings));
-      return `Com base nos seus dados: a sua capacidade de poupança mensal é ${formatCurrency(cashFlow.monthlyCapacity)}. Uma compra de ${formatCurrency(amount)} ${fits ? "cabe no seu mês sem comprometer o essencial" : "ultrapassa a sua margem mensal e sairia da poupança"} e representa ${savingsImpact} da sua poupança atual. ${primary ? `Lembre-se da missão "${primary.title}": ${fits ? "esta compra não a compromete significativamente." : "esta compra afasta-o dela."}` : ""} Sugiro usar o Simulador para ver o impacto completo.`;
+      return `Com base na sua estratégia: a poupança que decidiu guardar este mês é ${formatCurrency(cashFlow.plannedCapacity)} e a margem livre para gastos (sem tocar nessa poupança) é ${formatCurrency(cashFlow.safetyBuffer)}. Uma compra de ${formatCurrency(amount)} ${fitsBuffer ? "cabe nessa margem, sem comprometer o que planeou poupar" : "ultrapassa a margem livre — consumiria parte da poupança planeada"} e representa ${savingsImpact} da sua poupança atual. ${primary ? `Missão "${primary.title}": ${fitsBuffer ? "esta compra não a compromete." : "esta compra afasta-o dela."}` : ""} Use o Simulador para o impacto completo.`;
     }
-    return `Diga-me o valor e eu avalio com os seus números reais. Hoje a sua capacidade de poupança mensal é ${formatCurrency(cashFlow.monthlyCapacity)} e a poupança disponível é ${formatCurrency(netWorth.savings)}.`;
+    return `Diga-me o valor e eu avalio. Este mês pode gastar livremente até ${formatCurrency(cashFlow.safetyBuffer)} (margem de segurança) sem mexer na poupança planeada de ${formatCurrency(cashFlow.plannedCapacity)}.`;
   }
 
   // Quanto posso gastar?
   if (/(quanto posso gastar|quanto sobra|margem)/.test(q)) {
-    return `Depois de cobrir as despesas fixas (${formatCurrency(cashFlow.fixedMonthlyExpenses)}), a sua margem mensal é ${formatCurrency(cashFlow.monthlyCapacity)}. Para se manter no bom caminho, sugiro guardar pelo menos 20% e usar o resto com consciência.`;
+    return `A sua capacidade teórica é ${formatCurrency(cashFlow.theoreticalCapacity)}, mas decidiu guardar ${formatCurrency(cashFlow.plannedCapacity)} por mês. Isso deixa-lhe uma margem livre de ${formatCurrency(cashFlow.safetyBuffer)} para despesas variáveis, imprevistos e lazer — sem prejudicar o seu plano de poupança.`;
   }
 
   // Quando atinjo a meta?

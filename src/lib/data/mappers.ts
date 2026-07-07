@@ -18,6 +18,7 @@ import type { CurrencyCode } from "@/lib/format";
 const num = (v: unknown) => Number(v ?? 0);
 
 export function mapProfile(row: any, fallbackEmail = ""): UserProfile {
+  const s = row.strategy ?? {};
   return {
     id: row.id,
     fullName: row.full_name ?? fallbackEmail ?? "Utilizador",
@@ -25,6 +26,12 @@ export function mapProfile(row: any, fallbackEmail = ""): UserProfile {
     avatarUrl: row.avatar_url ?? undefined,
     baseCurrency: (row.base_currency ?? "AOA") as CurrencyCode,
     streak: num(row.streak),
+    strategy: {
+      monthlySavingsTarget:
+        s.monthlySavingsTarget != null ? num(s.monthlySavingsTarget) : null,
+      emergencyBufferEnabled: s.emergencyBufferEnabled ?? true,
+      optimizeForGoal: s.optimizeForGoal ?? true,
+    },
   };
 }
 

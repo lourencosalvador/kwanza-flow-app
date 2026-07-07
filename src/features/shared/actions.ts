@@ -17,6 +17,7 @@ import type {
   RecurringPayment,
   Salary,
   Transaction,
+  UserStrategy,
 } from "@/types/domain";
 import {
   mapAccount,
@@ -319,6 +320,13 @@ export async function clearDomain(
   if (domain === "accounts") {
     await supabase.from("transactions").delete().eq("user_id", user.id);
   }
+}
+
+/** Atualiza a estratégia financeira do utilizador (perfil). */
+export async function updateStrategy(strategy: UserStrategy): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("profiles").update({ strategy }).eq("id", user.id);
 }
 
 // ─────────────────────────────────────────────────────────────

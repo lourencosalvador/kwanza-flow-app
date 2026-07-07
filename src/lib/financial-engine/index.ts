@@ -27,7 +27,13 @@ export function analyze(
   const { accounts, transactions, salaries, debts, recurring, goals } = snapshot;
 
   const netWorth = calcNetWorth(accounts, debts);
-  const cashFlow = calcCashFlow(transactions, salaries, recurring, ref);
+  const cashFlow = calcCashFlow(
+    transactions,
+    salaries,
+    recurring,
+    ref,
+    snapshot.profile.strategy,
+  );
   const budget = calcBudget(
     transactions,
     cashFlow.monthIncome || cashFlow.expectedMonthlyIncome,

@@ -39,7 +39,16 @@ export function buildContextBlock({
   lines.push(`- Saldo do mês: ${formatCurrency(cashFlow.net)} (taxa de poupança ${formatPercent(cashFlow.savingsRate)})`);
   lines.push(`- Rendimento mensal esperado: ${formatCurrency(cashFlow.expectedMonthlyIncome)}`);
   lines.push(`- Despesa fixa mensal: ${formatCurrency(cashFlow.fixedMonthlyExpenses)}`);
-  lines.push(`- Capacidade de poupança mensal: ${formatCurrency(cashFlow.monthlyCapacity)}`);
+
+  lines.push("");
+  lines.push("CAPACIDADE DE POUPANÇA (estratégia do utilizador):");
+  lines.push(`- Teórica (máximo após despesas fixas): ${formatCurrency(cashFlow.theoreticalCapacity)}`);
+  lines.push(`- Planeada (alvo do utilizador${cashFlow.hasPlannedTarget ? "" : " — não definido, a usar a teórica"}): ${formatCurrency(cashFlow.plannedCapacity)}`);
+  lines.push(`- Real (poupado este mês até agora): ${formatCurrency(cashFlow.realCapacity)}`);
+  lines.push(`- Margem de segurança livre (teórica − planeada): ${formatCurrency(cashFlow.safetyBuffer)}`);
+  lines.push(
+    `NOTA: a capacidade PLANEADA é o compromisso de poupança do utilizador. O dinheiro que ele pode gastar livremente sem prejudicar o plano é a MARGEM DE SEGURANÇA (${formatCurrency(cashFlow.safetyBuffer)}). Gastar acima disso consome a poupança planeada e afasta-o da missão.`,
+  );
 
   lines.push("");
   lines.push("ORÇAMENTO (despesas por categoria, top 5):");

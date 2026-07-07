@@ -60,9 +60,20 @@ export function simulatePurchase(
     );
   }
   if (verdict !== "evitar" && savingsImpactPct > 0.3) {
-    verdict = verdict === "cautela" ? "cautela" : "cautela";
+    verdict = "cautela";
     reasons.push(
       `Consome ${Math.round(savingsImpactPct * 100)}% da sua poupança atual.`,
+    );
+  }
+  // Estratégia: gasto mensal acima da margem de segurança come a poupança planeada.
+  if (
+    verdict !== "evitar" &&
+    report.cashFlow.hasPlannedTarget &&
+    monthlyImpact > report.cashFlow.safetyBuffer
+  ) {
+    verdict = "cautela";
+    reasons.push(
+      "O custo mensal ultrapassa a sua margem de segurança livre e consumiria parte da poupança que planeou guardar.",
     );
   }
   if (reasons.length === 0) {

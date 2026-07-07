@@ -12,13 +12,45 @@ import { EntityMenu } from "@/components/shared/entity-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SalaryDialog } from "@/features/salary/components/salary-dialog";
 import { RecurringDialog } from "@/features/salary/components/recurring-dialog";
+import { StrategyDialog } from "@/features/salary/components/strategy-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
 import { useUIStore } from "@/store/ui-store";
 import { getCategory } from "@/config/categories";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { RecurringPayment, Salary } from "@/types/domain";
+
+function CapacityRow({
+  label,
+  hint,
+  value,
+  tone,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  tone: "muted" | "primary" | "success" | "danger";
+}) {
+  const toneClass = {
+    muted: "text-foreground",
+    primary: "text-primary",
+    success: "text-success",
+    danger: "text-destructive",
+  }[tone];
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </div>
+      <span className={cn("text-lg font-semibold tabular-nums", toneClass)}>
+        {formatCurrency(value)}
+      </span>
+    </div>
+  );
+}
 
 const FREQ_LABEL: Record<string, string> = {
   semanal: "Semanal",
@@ -47,6 +79,7 @@ export function SalaryView() {
         description="Configure os seus rendimentos e despesas fixas. Tudo editável."
         action={
           <>
+            <StrategyDialog />
             <SalaryDialog />
             <Button className="gap-2" onClick={() => openWizard(true)}>
               <Banknote className="size-4" /> Recebi salário
@@ -100,14 +133,41 @@ export function SalaryView() {
           ))}
 
           <Card className="gap-0">
-            <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground">Capacidade de poupança</p>
-              <p className="text-2xl font-semibold text-primary tabular-nums">
-                {formatCurrency(report.cashFlow.monthlyCapacity)}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                após {formatCurrency(report.cashFlow.fixedMonthlyExpenses)} de despesas fixas
-              </p>
+            <CardHeader className="flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">Capacidade de poupança</CardTitle>
+              <StrategyDialog />
+            </CardHeader>
+            <CardContent className="space-y-3 pt-1">
+              <CapacityRow
+                label="Teórica"
+                hint="máximo após despesas fixas"
+                value={report.cashFlow.theoreticalCapacity}
+                tone="muted"
+              />
+              <CapacityRow
+                label="Planeada"
+                hint={
+                  report.cashFlow.hasPlannedTarget
+                    ? "o que decidiu guardar/mês"
+                    : "definir na estratégia"
+                }
+                value={report.cashFlow.plannedCapacity}
+                tone="primary"
+              />
+              <CapacityRow
+                label="Real"
+                hint="poupado este mês"
+                value={report.cashFlow.realCapacity}
+                tone={report.cashFlow.realCapacity >= 0 ? "success" : "danger"}
+              />
+              {report.cashFlow.hasPlannedTarget && (
+                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                  <span>Margem de segurança livre</span>
+                  <span className="font-medium tabular-nums text-foreground">
+                    {formatCurrency(report.cashFlow.safetyBuffer)}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

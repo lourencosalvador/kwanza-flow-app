@@ -12,6 +12,7 @@ import type {
   RecurringPayment,
   Salary,
   Transaction,
+  UserStrategy,
 } from "@/types/domain";
 import { getCategory } from "@/config/categories";
 import type {
@@ -94,6 +95,7 @@ export function calcCashFlow(
   salaries: Salary[],
   recurring: RecurringPayment[],
   ref: Date = new Date(),
+  strategy?: UserStrategy,
 ): CashFlowReport {
   const monthTx = transactions.filter((t) => isSameMonth(t.date, ref));
   const monthIncome = monthTx
@@ -112,7 +114,22 @@ export function calcCashFlow(
     .reduce((s, r) => s + r.amount, 0);
 
   const net = monthIncome - monthExpenses;
-  const monthlyCapacity = expectedMonthlyIncome - fixedMonthlyExpenses;
+
+  // Capacidade TEÓRICA: o máximo que sobra após as despesas fixas.
+  const theoreticalCapacity = expectedMonthlyIncome - fixedMonthlyExpenses;
+
+  // Capacidade PLANEADA: alvo definido pelo utilizador (senão, a teórica).
+  const target = strategy?.monthlySavingsTarget ?? null;
+  const hasPlannedTarget = target != null && target > 0;
+  const plannedCapacity = hasPlannedTarget
+    ? Math.min(target, Math.max(0, theoreticalCapacity))
+    : theoreticalCapacity;
+
+  // Capacidade REAL: quanto foi efetivamente poupado no mês corrente.
+  const realCapacity = net;
+
+  // Margem de segurança = teórica − planeada.
+  const safetyBuffer = Math.max(0, theoreticalCapacity - plannedCapacity);
 
   return {
     monthIncome: round(monthIncome),
@@ -121,7 +138,13 @@ export function calcCashFlow(
     savingsRate: safeDiv(net, monthIncome || expectedMonthlyIncome),
     expectedMonthlyIncome: round(expectedMonthlyIncome),
     fixedMonthlyExpenses: round(fixedMonthlyExpenses),
-    monthlyCapacity: round(monthlyCapacity),
+    // Referência para previsões/metas/dívidas = capacidade planeada.
+    monthlyCapacity: round(plannedCapacity),
+    theoreticalCapacity: round(theoreticalCapacity),
+    plannedCapacity: round(plannedCapacity),
+    realCapacity: round(realCapacity),
+    safetyBuffer: round(safetyBuffer),
+    hasPlannedTarget,
   };
 }
 

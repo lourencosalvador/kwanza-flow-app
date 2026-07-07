@@ -27,8 +27,22 @@ export interface CashFlowReport {
   expectedMonthlyIncome: number;
   /** Despesa recorrente fixa mensal. */
   fixedMonthlyExpenses: number;
-  /** Capacidade de poupança mensal estimada. */
+  /**
+   * Capacidade de poupança de REFERÊNCIA usada em previsões, metas e dívidas.
+   * É a capacidade PLANEADA (estratégia do utilizador) ou, na sua ausência,
+   * a capacidade teórica.
+   */
   monthlyCapacity: number;
+  /** Capacidade TEÓRICA: rendimento esperado − despesas fixas. */
+  theoreticalCapacity: number;
+  /** Capacidade PLANEADA: alvo mensal de poupança definido pelo utilizador. */
+  plannedCapacity: number;
+  /** Capacidade REAL: quanto foi efetivamente poupado no mês corrente. */
+  realCapacity: number;
+  /** Margem de segurança = teórica − planeada (para variáveis/imprevistos). */
+  safetyBuffer: number;
+  /** Se o utilizador definiu explicitamente um alvo de poupança planeada. */
+  hasPlannedTarget: boolean;
 }
 
 export interface CategoryBreakdownItem {
