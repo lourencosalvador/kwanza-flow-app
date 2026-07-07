@@ -617,11 +617,37 @@ export const useFinancialStore = create<FinancialState>()(
     },
     {
       name: "kwanzaflow-demo",
+      // v2: snapshot passou a incluir `plans`. Bump invalida caches antigos.
+      version: 2,
       // Em modo live, a fonte de verdade é o Supabase: nada fica no localStorage.
       storage: createJSONStorage(() =>
         isDemoMode && typeof window !== "undefined" ? window.localStorage : (noopStorage as never),
       ),
       partialize: (s) => ({ snapshot: s.snapshot }),
+      // Garante que um snapshot persistido antigo (sem campos novos como
+      // `plans`) nunca deixa arrays undefined — evita crashes ao re-hidratar.
+      merge: (persisted, current) => {
+        const base = isDemoMode ? buildSeed() : buildEmptySnapshot();
+        const snap = (persisted as { snapshot?: Partial<FinancialSnapshot> } | undefined)?.snapshot;
+        return {
+          ...current,
+          snapshot: {
+            ...base,
+            ...(snap ?? {}),
+            // Reafirma que todas as coleções existem, mesmo que o snapshot
+            // persistido seja de uma versão anterior.
+            accounts: snap?.accounts ?? base.accounts,
+            transactions: snap?.transactions ?? base.transactions,
+            salaries: snap?.salaries ?? base.salaries,
+            debts: snap?.debts ?? base.debts,
+            recurring: snap?.recurring ?? base.recurring,
+            goals: snap?.goals ?? base.goals,
+            missions: snap?.missions ?? base.missions,
+            plans: snap?.plans ?? base.plans,
+            profile: snap?.profile ?? base.profile,
+          },
+        };
+      },
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;
       },

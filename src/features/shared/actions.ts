@@ -43,7 +43,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
   const { supabase, user } = await ctx();
   if (!user) return null;
 
-  const [profileRes, accounts, transactions, salaries, debts, recurring, goals, missions, plans] =
+  const [profileRes, accounts, transactions, salaries, debts, recurring, goals, missions] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("accounts").select("*").order("created_at"),
@@ -53,8 +53,17 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
       supabase.from("recurring_payments").select("*"),
       supabase.from("goals").select("*"),
       supabase.from("missions").select("*").order("created_at"),
-      supabase.from("plans").select("*").order("created_at"),
     ]);
+
+  // A tabela `plans` (migração 0002) pode ainda não existir — isolada para que
+  // a sua ausência NUNCA afete o carregamento das restantes secções.
+  let plansData: unknown[] = [];
+  try {
+    const plansRes = await supabase.from("plans").select("*").order("created_at");
+    if (Array.isArray(plansRes.data)) plansData = plansRes.data;
+  } catch {
+    plansData = [];
+  }
 
   return {
     profile: mapProfile(profileRes.data ?? { id: user.id }, user.email ?? ""),
@@ -65,8 +74,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
     recurring: (recurring.data ?? []).map(mapRecurring),
     goals: (goals.data ?? []).map(mapGoal),
     missions: (missions.data ?? []).map(mapMission),
-    // Se a migração 0002 ainda não correu, `plans.data` vem null e fica [].
-    plans: (plans.data ?? []).map(mapPlan),
+    plans: plansData.map(mapPlan),
   };
 }
 

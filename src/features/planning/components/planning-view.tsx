@@ -20,7 +20,7 @@ import type { Plan } from "@/types/domain";
 
 export function PlanningView() {
   const mounted = useMounted();
-  const plans = useFinancialStore((s) => s.snapshot.plans);
+  const plans = useFinancialStore((s) => s.snapshot.plans) ?? [];
   const updatePlan = useFinancialStore((s) => s.updatePlan);
   const deletePlan = useFinancialStore((s) => s.deletePlan);
   const [editing, setEditing] = React.useState<Plan | null>(null);
