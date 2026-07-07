@@ -7,16 +7,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/shared/page-header";
 import { Icon } from "@/components/icon";
-import { buildAchievements } from "@/lib/mock/seed";
+import { deriveAchievements } from "@/lib/derive";
 import { useFinancialStore } from "@/store/financial-store";
-import { useMounted } from "@/hooks/use-financial-report";
+import { useMounted, useSnapshot } from "@/hooks/use-financial-report";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function AchievementsView() {
   const mounted = useMounted();
+  const snapshot = useSnapshot();
   const profile = useFinancialStore((s) => s.snapshot.profile);
-  const achievements = React.useMemo(() => buildAchievements(), []);
+  const achievements = React.useMemo(() => deriveAchievements(snapshot), [snapshot]);
 
   if (!mounted) return <Skeleton className="h-96 w-full rounded-xl" />;
 

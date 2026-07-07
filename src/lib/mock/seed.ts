@@ -4,13 +4,7 @@
  * Gerados relativamente à data atual para alimentar gráficos e o "mês corrente".
  */
 
-import type {
-  Achievement,
-  FinancialSnapshot,
-  SmartNotification,
-  TimelineEvent,
-  Transaction,
-} from "@/types/domain";
+import type { FinancialSnapshot, Plan, Transaction } from "@/types/domain";
 
 function iso(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -194,36 +188,44 @@ export function buildSeed(ref: Date = new Date()): FinancialSnapshot {
     { id: "tx-divida", accountId: "acc-bai", type: "despesa", amount: 50_000, category: "outros", description: "Pagamento cartão BAI", date: dayThisMonth(20, ref) },
   ];
 
-  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions };
+  const plans: Plan[] = [
+    {
+      id: "plan-mes",
+      title: "Plano do Mês",
+      period: "Mensal",
+      budget: 850_000,
+      createdAt: monthsAgo(0, 1, ref),
+      tasks: [
+        { id: "t1", label: "Pagar renda até dia 5", done: true },
+        { id: "t2", label: "Guardar 150 000 Kz", done: false },
+        { id: "t3", label: "Abater dívida do cartão", done: false },
+      ],
+    },
+  ];
+
+  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions, plans };
 }
 
-export function buildTimeline(ref: Date = new Date()): TimelineEvent[] {
-  return [
-    { id: "ev-1", kind: "salario", title: "Salário recebido", amount: 850_000, date: dayThisMonth(1, ref) },
-    { id: "ev-2", kind: "marco", title: "Poupança ultrapassou 1 milhão", description: "BFA Poupança", amount: 1_000_000, date: monthsAgo(1, 18, ref) },
-    { id: "ev-3", kind: "divida_quitada", title: "5ª prestação do cartão paga", amount: 50_000, date: monthsAgo(1, 20, ref) },
-    { id: "ev-4", kind: "fundo_emergencia", title: "Fundo de emergência a 70%", date: monthsAgo(2, 10, ref) },
-    { id: "ev-5", kind: "missao", title: "Missão criada: Guardar 3 milhões", date: monthsAgo(3, 1, ref) },
-  ];
+/** Snapshot vazio: estado inicial em modo live (dados vêm do Supabase). */
+export function buildEmptySnapshot(): FinancialSnapshot {
+  return {
+    profile: {
+      id: "",
+      fullName: "",
+      email: "",
+      baseCurrency: "AOA",
+      streak: 0,
+    },
+    accounts: [],
+    transactions: [],
+    salaries: [],
+    debts: [],
+    recurring: [],
+    goals: [],
+    missions: [],
+    plans: [],
+  };
 }
 
-export function buildAchievements(): Achievement[] {
-  return [
-    { id: "primeira_poupanca", title: "Primeira poupança", description: "Guardou dinheiro pela primeira vez", icon: "Sparkles", unlocked: true, progress: 1 },
-    { id: "cem_mil", title: "100 mil", description: "Atingiu 100 000 Kz em poupança", icon: "Coins", unlocked: true, progress: 1 },
-    { id: "quinhentos_mil", title: "500 mil", description: "Atingiu 500 000 Kz em poupança", icon: "Medal", unlocked: true, progress: 1 },
-    { id: "um_milhao", title: "Primeiro milhão", description: "Atingiu 1 000 000 Kz em poupança", icon: "Trophy", unlocked: true, progress: 1 },
-    { id: "mes_sem_emprestimos", title: "Mês sem empréstimos", description: "30 dias sem pedir emprestado", icon: "ShieldCheck", unlocked: true, progress: 1 },
-    { id: "meta_concluida", title: "Meta concluída", description: "Concluiu a sua primeira meta", icon: "Target", unlocked: false, progress: 0.7 },
-    { id: "sequencia_registos", title: "Sequência de 30 dias", description: "Registou movimentos 30 dias seguidos", icon: "Flame", unlocked: false, progress: 0.4 },
-  ];
-}
-
-export function buildNotifications(ref: Date = new Date()): SmartNotification[] {
-  return [
-    { id: "n-1", level: "info", title: "Salário a chegar", body: "Recebe o salário dentro de 1 dia. Prepare a distribuição.", date: iso(ref), read: false, href: "/salario" },
-    { id: "n-2", level: "aviso", title: "Internet vence amanhã", body: "A fatura da internet (25 000 Kz) vence amanhã.", date: iso(ref), read: false, href: "/calendario" },
-    { id: "n-3", level: "sucesso", title: "60 dias sem empréstimos", body: "Parabéns! Está há 60 dias sem pedir emprestado.", date: monthsAgo(0, Math.max(1, ref.getDate() - 1), ref), read: true },
-    { id: "n-4", level: "aviso", title: "Lazer acima do normal", body: "Gastou 30% mais em lazer esta semana do que a sua média.", date: monthsAgo(0, Math.max(1, ref.getDate() - 2), ref), read: false, href: "/analytics" },
-  ];
-}
+// Timeline, notificações e conquistas já não são mock: são derivadas dos
+// dados reais do snapshot em src/lib/derive/.

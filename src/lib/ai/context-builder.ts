@@ -3,7 +3,7 @@
  * Apenas dados JÁ PROCESSADOS pelo Motor Financeiro entram aqui.
  */
 
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 import type { FinancialReport } from "@/lib/financial-engine/types";
 import type { Mission } from "@/types/domain";
 
@@ -51,7 +51,7 @@ export function buildContextBlock({
   lines.push("");
   lines.push("DÍVIDAS:");
   lines.push(`- Em aberto: ${formatCurrency(debts.totalOutstanding)} | Já pago: ${formatCurrency(debts.totalPaid)} (${formatPercent(debts.paidShare)})`);
-  lines.push(`- Meses para ficar sem dívidas (capacidade atual): ${debts.monthsToDebtFree ?? "—"}`);
+  lines.push(`- Tempo para ficar sem dívidas (capacidade atual): ${formatMonths(debts.monthsToDebtFree)}`);
   if (debts.payoffOrder.length) {
     lines.push(`- Ordem de pagamento sugerida: ${debts.payoffOrder.map((d) => `${d.creditor} (${formatCurrency(d.outstanding)}, ${d.priority})`).join(" → ")}`);
   }
@@ -59,7 +59,7 @@ export function buildContextBlock({
   lines.push("");
   lines.push("METAS:");
   goals.forEach((g) => {
-    lines.push(`- ${g.title}: ${formatPercent(g.progress)} concluído, faltam ${formatCurrency(g.remaining)}, ~${g.monthsToComplete ?? "—"} meses${g.onTrack ? " (no bom caminho)" : " (atrasada)"}`);
+    lines.push(`- ${g.title}: ${formatPercent(g.progress)} concluído, faltam ${formatCurrency(g.remaining)}, ~${formatMonths(g.monthsToComplete)}${g.onTrack ? " (no bom caminho)" : " (atrasada)"}`);
   });
 
   lines.push("");

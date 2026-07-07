@@ -68,7 +68,7 @@ export function PayDebtDialog({ debt }: { debt: Debt }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Pagar — {debt.creditor}</DialogTitle>
+          <DialogTitle>Pagar a {debt.creditor}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <p className="text-sm text-muted-foreground">

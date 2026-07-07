@@ -17,13 +17,15 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ClearAllButton } from "@/components/shared/clear-all-button";
-import { AddDebtDialog } from "@/features/debts/components/add-debt-dialog";
+import { EntityMenu } from "@/components/shared/entity-menu";
+import { DebtDialog } from "@/features/debts/components/debt-dialog";
 import { PayDebtDialog } from "@/features/debts/components/pay-debt-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
-import { formatCurrency, formatCompact, formatDate } from "@/lib/format";
+import { formatCurrency, formatCompact, formatDate, formatMonths } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Priority } from "@/types/domain";
+import { toast } from "sonner";
+import type { Debt, Priority } from "@/types/domain";
 
 const PRIORITY_VARIANT: Record<Priority, "destructive" | "warning" | "secondary"> = {
   critica: "destructive",
@@ -35,7 +37,9 @@ const PRIORITY_VARIANT: Record<Priority, "destructive" | "warning" | "secondary"
 export function DebtsView() {
   const mounted = useMounted();
   const debts = useFinancialStore((s) => s.snapshot.debts);
+  const deleteDebt = useFinancialStore((s) => s.deleteDebt);
   const report = useFinancialReport();
+  const [editing, setEditing] = React.useState<Debt | null>(null);
 
   if (!mounted) return <Skeleton className="h-96 w-full rounded-xl" />;
 
@@ -49,7 +53,7 @@ export function DebtsView() {
         action={
           <>
             <ClearAllButton domain="debts" itemsLabel="todas as suas dívidas" count={debts.length} />
-            <AddDebtDialog />
+            <DebtDialog />
           </>
         }
       />
@@ -58,7 +62,7 @@ export function DebtsView() {
         <StatCard label="Em aberto" value={formatCurrency(report.debts.totalOutstanding)} icon="TrendingDown" accent={report.debts.totalOutstanding > 0 ? "danger" : "default"} index={0} />
         <StatCard label="Já pago" value={formatCurrency(report.debts.totalPaid)} icon="CheckCircle2" accent="primary" index={1} />
         <StatCard label="Progresso" value={`${Math.round(report.debts.paidShare * 100)}%`} icon="BarChart3" index={2} />
-        <StatCard label="Meses p/ zerar" value={report.debts.monthsToDebtFree?.toString() ?? "—"} icon="CalendarDays" index={3} hint="ritmo atual" />
+        <StatCard label="Tempo p/ zerar" value={formatMonths(report.debts.monthsToDebtFree)} icon="CalendarDays" index={3} hint="ritmo atual" />
       </div>
 
       {open.length === 0 ? (
@@ -121,7 +125,17 @@ export function DebtsView() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <p className="font-medium">{d.creditor}</p>
-                      <Badge variant={PRIORITY_VARIANT[d.priority]}>{d.priority}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={PRIORITY_VARIANT[d.priority]}>{d.priority}</Badge>
+                        <EntityMenu
+                          label={`a dívida a "${d.creditor}"`}
+                          onEdit={() => setEditing(d)}
+                          onDelete={() => {
+                            deleteDebt(d.id);
+                            toast.success("Dívida removida", { description: d.creditor });
+                          }}
+                        />
+                      </div>
                     </div>
                     <div className="mt-2 flex items-end justify-between">
                       <span className="text-lg font-semibold tabular-nums">
@@ -145,6 +159,14 @@ export function DebtsView() {
             })}
           </div>
         </div>
+      )}
+
+      {editing && (
+        <DebtDialog
+          debt={editing}
+          open={!!editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
       )}
     </div>
   );

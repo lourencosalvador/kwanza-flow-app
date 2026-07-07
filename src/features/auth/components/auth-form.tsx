@@ -70,7 +70,7 @@ export function AuthForm() {
           {mode === "signin" ? "Bem-vindo de volta" : "Crie a sua conta"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          KwanzaFlow — o seu sistema operativo financeiro
+          O seu sistema operativo financeiro
         </p>
       </div>
 

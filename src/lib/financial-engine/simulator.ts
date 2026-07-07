@@ -50,7 +50,7 @@ export function simulatePurchase(
   if (cashFlowAfter < 0) {
     verdict = "evitar";
     reasons.push(
-      "O pagamento mensal ultrapassa a sua capacidade de poupança — geraria fluxo de caixa negativo.",
+      "O pagamento mensal ultrapassa a sua capacidade de poupança e geraria fluxo de caixa negativo.",
     );
   }
   if (verdict !== "evitar" && goalDelayMonths >= 3) {

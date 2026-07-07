@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +8,15 @@ import { Progress } from "@/components/ui/progress";
 import { Icon } from "@/components/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { ClearAllButton } from "@/components/shared/clear-all-button";
-import { AddAccountDialog } from "@/features/accounts/components/add-account-dialog";
+import { EntityMenu } from "@/components/shared/entity-menu";
+import { EmptyState } from "@/components/shared/empty-state";
+import { AccountDialog } from "@/features/accounts/components/account-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useMounted } from "@/hooks/use-financial-report";
 import { formatCurrency } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import type { BankAccount } from "@/types/domain";
 
 const KIND_LABEL: Record<string, string> = {
   corrente: "Corrente",
@@ -23,6 +28,8 @@ const KIND_LABEL: Record<string, string> = {
 export function AccountsView() {
   const mounted = useMounted();
   const accounts = useFinancialStore((s) => s.snapshot.accounts);
+  const deleteAccount = useFinancialStore((s) => s.deleteAccount);
+  const [editing, setEditing] = React.useState<BankAccount | null>(null);
 
   if (!mounted) {
     return (
@@ -48,10 +55,18 @@ export function AccountsView() {
               itemsLabel="todas as contas e transações"
               count={accounts.length}
             />
-            <AddAccountDialog />
+            <AccountDialog />
           </>
         }
       />
+
+      {accounts.length === 0 && (
+        <EmptyState
+          icon="Landmark"
+          title="Ainda sem contas"
+          description="Crie a sua primeira conta bancária para começar a acompanhar o seu património."
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {accounts.map((a, i) => {
@@ -78,7 +93,17 @@ export function AccountsView() {
                     >
                       <Icon name={a.icon} className="size-5" />
                     </span>
-                    <Badge variant="secondary">{KIND_LABEL[a.kind]}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary">{KIND_LABEL[a.kind]}</Badge>
+                      <EntityMenu
+                        label={`a conta "${a.name}"`}
+                        onEdit={() => setEditing(a)}
+                        onDelete={() => {
+                          deleteAccount(a.id);
+                          toast.success("Conta removida", { description: a.name });
+                        }}
+                      />
+                    </div>
                   </div>
                   <p className="mt-4 text-sm text-muted-foreground">{a.name}</p>
                   <p className="text-2xl font-semibold tracking-tight tabular-nums">
@@ -102,6 +127,14 @@ export function AccountsView() {
           );
         })}
       </div>
+
+      {editing && (
+        <AccountDialog
+          account={editing}
+          open={!!editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
+      )}
     </div>
   );
 }

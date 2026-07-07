@@ -3,9 +3,10 @@
 import * as React from "react";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Icon } from "@/components/icon";
-import { buildTimeline } from "@/lib/mock/seed";
-import { useMounted } from "@/hooks/use-financial-report";
+import { deriveTimeline } from "@/lib/derive";
+import { useMounted, useSnapshot } from "@/hooks/use-financial-report";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { TimelineEventKind } from "@/types/domain";
@@ -21,9 +22,23 @@ const KIND_META: Record<TimelineEventKind, { icon: string; color: string }> = {
 
 export function TimelineView() {
   const mounted = useMounted();
-  const events = React.useMemo(() => buildTimeline(), []);
+  const snapshot = useSnapshot();
+  const events = React.useMemo(() => deriveTimeline(snapshot), [snapshot]);
 
   if (!mounted) return <Skeleton className="h-96 w-full rounded-xl" />;
+
+  if (events.length === 0) {
+    return (
+      <div>
+        <PageHeader title="Timeline" description="A história da sua evolução financeira." />
+        <EmptyState
+          icon="GitCommitVertical"
+          title="A sua história começa agora"
+          description="Cada salário recebido, dívida paga e meta atingida aparece aqui automaticamente."
+        />
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -2,7 +2,7 @@
 
 import { StatCard } from "@/components/shared/stat-card";
 import { useFinancialReport } from "@/hooks/use-financial-report";
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 
 export function SummaryGrid() {
   const r = useFinancialReport();
@@ -45,7 +45,9 @@ export function SummaryGrid() {
       value: formatCurrency(r.netWorth.totalDebt),
       icon: "TrendingDown",
       accent: r.netWorth.totalDebt > 0 ? ("danger" as const) : ("default" as const),
-      hint: r.debts.monthsToDebtFree ? `${r.debts.monthsToDebtFree} meses p/ zerar` : undefined,
+      hint: r.debts.monthsToDebtFree
+        ? `${formatMonths(r.debts.monthsToDebtFree)} p/ zerar`
+        : undefined,
     },
     {
       label: "Investimentos",

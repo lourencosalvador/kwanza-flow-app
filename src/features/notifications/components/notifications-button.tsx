@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/icon";
-import { buildNotifications } from "@/lib/mock/seed";
+import { deriveNotifications } from "@/lib/derive";
+import { useSnapshot, useMounted } from "@/hooks/use-financial-report";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { NotificationLevel } from "@/types/domain";
@@ -31,7 +32,12 @@ const LEVEL_COLOR: Record<NotificationLevel, string> = {
 };
 
 export function NotificationsButton() {
-  const notifications = React.useMemo(() => buildNotifications(), []);
+  const mounted = useMounted();
+  const snapshot = useSnapshot();
+  const notifications = React.useMemo(
+    () => (mounted ? deriveNotifications(snapshot) : []),
+    [mounted, snapshot],
+  );
   const unread = notifications.filter((n) => !n.read).length;
 
   return (
@@ -57,6 +63,11 @@ export function NotificationsButton() {
           <p className="text-sm font-semibold">Notificações</p>
           {unread > 0 && <Badge variant="default">{unread} novas</Badge>}
         </div>
+        {notifications.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Sem notificações por agora. Avisamos quando algo precisar da sua atenção.
+          </p>
+        )}
         <ul className="max-h-96 overflow-y-auto py-1">
           {notifications.map((n) => (
             <li key={n.id}>

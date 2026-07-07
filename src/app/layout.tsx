@@ -17,11 +17,11 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "KwanzaFlow — O seu Sistema Operativo Financeiro",
+    default: "KwanzaFlow · O seu Sistema Operativo Financeiro",
     template: "%s · KwanzaFlow",
   },
   description:
-    "KwanzaFlow AI — sai do ciclo de dívidas, cria património e atinge as tuas missões financeiras com um consultor inteligente sempre disponível.",
+    "KwanzaFlow AI: sai do ciclo de dívidas, cria património e atinge as tuas missões financeiras com um consultor inteligente sempre disponível.",
   applicationName: "KwanzaFlow",
 };
 

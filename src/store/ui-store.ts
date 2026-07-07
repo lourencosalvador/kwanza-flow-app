@@ -13,7 +13,8 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: true,
+  // Controla apenas a gaveta móvel; começa fechada.
+  sidebarOpen: false,
   commandOpen: false,
   salaryWizardOpen: false,
   setSidebar: (open) => set({ sidebarOpen: open }),

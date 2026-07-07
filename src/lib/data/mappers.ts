@@ -109,6 +109,22 @@ export function mapGoal(row: any): Goal {
   };
 }
 
+export function mapPlan(row: any): import("@/types/domain").Plan {
+  const tasks = Array.isArray(row.tasks) ? row.tasks : [];
+  return {
+    id: row.id,
+    title: row.title,
+    period: row.period ?? "Mensal",
+    budget: num(row.budget),
+    tasks: tasks.map((t: any) => ({
+      id: String(t.id ?? ""),
+      label: String(t.label ?? ""),
+      done: !!t.done,
+    })),
+    createdAt: row.created_at?.slice(0, 10) ?? "",
+  };
+}
+
 export function mapMission(row: any): Mission {
   return {
     id: row.id,

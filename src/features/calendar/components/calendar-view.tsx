@@ -68,7 +68,7 @@ export function CalendarView() {
 
   return (
     <div>
-      <PageHeader title="Calendário" description={`Compromissos de ${monthLabel} — salários, rendas e pagamentos.`} />
+      <PageHeader title="Calendário" description={`Compromissos de ${monthLabel}: salários, rendas e pagamentos.`} />
 
       <Card className="gap-0">
         <CardContent className="p-4">

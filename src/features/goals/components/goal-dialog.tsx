@@ -16,12 +16,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useFinancialStore } from "@/store/financial-store";
+import type { Goal } from "@/types/domain";
 
 const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-4)", "var(--chart-3)"];
 
-export function AddGoalDialog() {
-  const [open, setOpen] = React.useState(false);
+/** Cria (sem `goal`) ou edita (com `goal`) uma meta. */
+export function GoalDialog({
+  goal,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  goal?: Goal;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const isEdit = !!goal;
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
+
   const addGoal = useFinancialStore((s) => s.addGoal);
+  const updateGoal = useFinancialStore((s) => s.updateGoal);
 
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -30,36 +45,58 @@ export function AddGoalDialog() {
   const [monthly, setMonthly] = React.useState<number>(0);
   const [color, setColor] = React.useState(COLORS[0]);
 
+  React.useEffect(() => {
+    if (!open) return;
+    if (goal) {
+      setTitle(goal.title);
+      setDescription(goal.description ?? "");
+      setTarget(goal.targetAmount);
+      setDeadline(goal.deadline ?? "");
+      setMonthly(goal.monthlyContribution ?? 0);
+      setColor(goal.color);
+    } else {
+      setTitle("");
+      setDescription("");
+      setTarget(0);
+      setDeadline("");
+      setMonthly(0);
+      setColor(COLORS[0]);
+    }
+  }, [open, goal]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!title || target <= 0) return;
-    addGoal({
+    const payload = {
       title,
       description: description || undefined,
       targetAmount: target,
       deadline: deadline || undefined,
       monthlyContribution: monthly || undefined,
       color,
-    });
-    toast.success("Meta criada", { description: title });
-    setTitle("");
-    setDescription("");
-    setTarget(0);
-    setDeadline("");
-    setMonthly(0);
+    };
+    if (isEdit && goal) {
+      updateGoal(goal.id, payload);
+      toast.success("Meta atualizada", { description: title });
+    } else {
+      addGoal(payload);
+      toast.success("Meta criada", { description: title });
+    }
     setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-1.5">
-          <Plus className="size-4" /> Nova meta
-        </Button>
-      </DialogTrigger>
+      {!isEdit && (
+        <DialogTrigger asChild>
+          <Button className="gap-1.5">
+            <Plus className="size-4" /> Nova meta
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar meta</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar meta" : "Criar meta"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
@@ -103,7 +140,9 @@ export function AddGoalDialog() {
               </div>
             </div>
           </div>
-          <Button type="submit" className="w-full">Criar meta</Button>
+          <Button type="submit" className="w-full">
+            {isEdit ? "Guardar alterações" : "Criar meta"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

@@ -27,6 +27,7 @@ export function buildCashflowSeries(
       const td = new Date(t.date);
       return td.getFullYear() === y && td.getMonth() === m;
     });
+    // Apenas dados reais: meses sem transações aparecem a zero.
     const receitas = inMonth
       .filter((t) => t.type === "receita")
       .reduce((s, t) => s + t.amount, 0);
@@ -34,24 +35,11 @@ export function buildCashflowSeries(
       .filter((t) => t.type === "despesa")
       .reduce((s, t) => s + t.amount, 0);
 
-    // Para meses sem dados (demo), estima a partir dos recorrentes/salário.
-    const fallbackIncome =
-      receitas === 0
-        ? snapshot.salaries.reduce((s, sal) => s + (sal.active ? sal.amount : 0), 0)
-        : receitas;
-    const fallbackExpense =
-      despesas === 0
-        ? snapshot.recurring
-            .filter((r) => r.active)
-            .reduce((s, r) => s + r.amount, 0) +
-          Math.round(fallbackIncome * 0.18)
-        : despesas;
-
     points.push({
       month: MONTH_LABELS[m],
-      receitas: fallbackIncome,
-      despesas: fallbackExpense,
-      saldo: fallbackIncome - fallbackExpense,
+      receitas,
+      despesas,
+      saldo: receitas - despesas,
     });
   }
   return points;

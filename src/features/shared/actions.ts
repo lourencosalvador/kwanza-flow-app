@@ -13,6 +13,9 @@ import type {
   FinancialSnapshot,
   Goal,
   Mission,
+  Plan,
+  RecurringPayment,
+  Salary,
   Transaction,
 } from "@/types/domain";
 import {
@@ -20,6 +23,7 @@ import {
   mapDebt,
   mapGoal,
   mapMission,
+  mapPlan,
   mapProfile,
   mapRecurring,
   mapSalary,
@@ -39,7 +43,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
   const { supabase, user } = await ctx();
   if (!user) return null;
 
-  const [profileRes, accounts, transactions, salaries, debts, recurring, goals, missions] =
+  const [profileRes, accounts, transactions, salaries, debts, recurring, goals, missions, plans] =
     await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
       supabase.from("accounts").select("*").order("created_at"),
@@ -49,6 +53,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
       supabase.from("recurring_payments").select("*"),
       supabase.from("goals").select("*"),
       supabase.from("missions").select("*").order("created_at"),
+      supabase.from("plans").select("*").order("created_at"),
     ]);
 
   return {
@@ -60,6 +65,8 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
     recurring: (recurring.data ?? []).map(mapRecurring),
     goals: (goals.data ?? []).map(mapGoal),
     missions: (missions.data ?? []).map(mapMission),
+    // Se a migração 0002 ainda não correu, `plans.data` vem null e fica [].
+    plans: (plans.data ?? []).map(mapPlan),
   };
 }
 
@@ -276,7 +283,7 @@ export async function payDebt(params: {
       type: "despesa",
       amount: applied,
       category: "outros",
-      description: `Pagamento — ${data.creditor ?? "dívida"}`,
+      description: `Pagamento a ${data.creditor ?? "dívida"}`,
       date: params.date,
       recurring: false,
     });
@@ -304,6 +311,212 @@ export async function clearDomain(
   if (domain === "accounts") {
     await supabase.from("transactions").delete().eq("user_id", user.id);
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// UPDATE / DELETE por entidade. RLS garante que só o dono altera.
+// ─────────────────────────────────────────────────────────────
+
+export async function updateAccount(
+  id: string,
+  patch: Partial<Omit<BankAccount, "id" | "createdAt">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.name !== undefined) upd.name = patch.name;
+  if (patch.kind !== undefined) upd.kind = patch.kind;
+  if (patch.balance !== undefined) upd.balance = patch.balance;
+  if (patch.icon !== undefined) upd.icon = patch.icon;
+  if (patch.color !== undefined) upd.color = patch.color;
+  if (patch.targetBalance !== undefined) upd.target_balance = patch.targetBalance ?? null;
+  if (Object.keys(upd).length) await supabase.from("accounts").update(upd).eq("id", id);
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  // As transações da conta caem em cascata (FK on delete cascade).
+  await supabase.from("accounts").delete().eq("id", id);
+}
+
+export async function createSalary(input: Omit<Salary, "id">): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("salaries").insert({
+    user_id: user.id,
+    label: input.label,
+    amount: input.amount,
+    frequency: input.frequency,
+    pay_day: input.payDay,
+    account_id: input.accountId || null,
+    active: input.active,
+  });
+}
+
+export async function updateSalary(
+  id: string,
+  patch: Partial<Omit<Salary, "id">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.label !== undefined) upd.label = patch.label;
+  if (patch.amount !== undefined) upd.amount = patch.amount;
+  if (patch.frequency !== undefined) upd.frequency = patch.frequency;
+  if (patch.payDay !== undefined) upd.pay_day = patch.payDay;
+  if (patch.accountId !== undefined) upd.account_id = patch.accountId || null;
+  if (patch.active !== undefined) upd.active = patch.active;
+  if (Object.keys(upd).length) await supabase.from("salaries").update(upd).eq("id", id);
+}
+
+export async function deleteSalary(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("salaries").delete().eq("id", id);
+}
+
+export async function createRecurring(
+  input: Omit<RecurringPayment, "id">,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("recurring_payments").insert({
+    user_id: user.id,
+    label: input.label,
+    kind: input.kind,
+    category: input.category,
+    amount: input.amount,
+    day_of_month: input.dayOfMonth,
+    active: input.active,
+  });
+}
+
+export async function updateRecurring(
+  id: string,
+  patch: Partial<Omit<RecurringPayment, "id">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.label !== undefined) upd.label = patch.label;
+  if (patch.kind !== undefined) upd.kind = patch.kind;
+  if (patch.category !== undefined) upd.category = patch.category;
+  if (patch.amount !== undefined) upd.amount = patch.amount;
+  if (patch.dayOfMonth !== undefined) upd.day_of_month = patch.dayOfMonth;
+  if (patch.active !== undefined) upd.active = patch.active;
+  if (Object.keys(upd).length)
+    await supabase.from("recurring_payments").update(upd).eq("id", id);
+}
+
+export async function deleteRecurring(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("recurring_payments").delete().eq("id", id);
+}
+
+export async function updateDebt(
+  id: string,
+  patch: Partial<Omit<Debt, "id" | "history">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.creditor !== undefined) upd.creditor = patch.creditor;
+  if (patch.totalAmount !== undefined) upd.total_amount = patch.totalAmount;
+  if (patch.paidAmount !== undefined) upd.paid_amount = patch.paidAmount;
+  if (patch.installments !== undefined) upd.installments = patch.installments;
+  if (patch.dueDate !== undefined) upd.due_date = patch.dueDate || null;
+  if (patch.priority !== undefined) upd.priority = patch.priority;
+  if (patch.status !== undefined) upd.status = patch.status;
+  if (Object.keys(upd).length) await supabase.from("debts").update(upd).eq("id", id);
+}
+
+export async function deleteDebt(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("debts").delete().eq("id", id);
+}
+
+export async function updateGoal(
+  id: string,
+  patch: Partial<Omit<Goal, "id">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.title !== undefined) upd.title = patch.title;
+  if (patch.description !== undefined) upd.description = patch.description ?? null;
+  if (patch.targetAmount !== undefined) upd.target_amount = patch.targetAmount;
+  if (patch.currentAmount !== undefined) upd.current_amount = patch.currentAmount;
+  if (patch.deadline !== undefined) upd.deadline = patch.deadline || null;
+  if (patch.status !== undefined) upd.status = patch.status;
+  if (patch.monthlyContribution !== undefined)
+    upd.monthly_contribution = patch.monthlyContribution ?? null;
+  if (patch.color !== undefined) upd.color = patch.color;
+  if (Object.keys(upd).length) await supabase.from("goals").update(upd).eq("id", id);
+}
+
+export async function deleteGoal(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("goals").delete().eq("id", id);
+}
+
+export async function updateMission(
+  id: string,
+  patch: Partial<Omit<Mission, "id" | "createdAt">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.title !== undefined) upd.title = patch.title;
+  if (patch.kind !== undefined) upd.kind = patch.kind;
+  if (patch.targetAmount !== undefined) upd.target_amount = patch.targetAmount ?? null;
+  if (patch.deadline !== undefined) upd.deadline = patch.deadline || null;
+  if (patch.status !== undefined) upd.status = patch.status;
+  if (Object.keys(upd).length) await supabase.from("missions").update(upd).eq("id", id);
+}
+
+export async function deleteMission(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("missions").delete().eq("id", id);
+}
+
+// ── Planos (Planeamento) ─────────────────────────────────────────
+export async function createPlan(
+  input: Omit<Plan, "id" | "createdAt">,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("plans").insert({
+    user_id: user.id,
+    title: input.title,
+    period: input.period,
+    budget: input.budget,
+    tasks: input.tasks,
+  });
+}
+
+export async function updatePlan(
+  id: string,
+  patch: Partial<Omit<Plan, "id" | "createdAt">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.title !== undefined) upd.title = patch.title;
+  if (patch.period !== undefined) upd.period = patch.period;
+  if (patch.budget !== undefined) upd.budget = patch.budget;
+  if (patch.tasks !== undefined) upd.tasks = patch.tasks;
+  if (Object.keys(upd).length) await supabase.from("plans").update(upd).eq("id", id);
+}
+
+export async function deletePlan(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("plans").delete().eq("id", id);
 }
 
 async function adjustBalance(accountId: string, delta: number) {

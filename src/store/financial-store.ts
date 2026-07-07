@@ -1,17 +1,21 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type {
   BankAccount,
   Debt,
   FinancialSnapshot,
   Goal,
   Mission,
+  Plan,
+  RecurringPayment,
+  Salary,
   Transaction,
 } from "@/types/domain";
 import type { SalaryAllocationResult } from "@/lib/financial-engine/types";
-import { buildSeed } from "@/lib/mock/seed";
+import { buildEmptySnapshot, buildSeed } from "@/lib/mock/seed";
+import { isDemoMode } from "@/lib/env";
 import { uid } from "@/lib/utils";
 import {
   applySalaryServer,
@@ -21,10 +25,27 @@ import {
   createDebt,
   createGoal,
   createMission,
+  createPlan as createPlanServer,
+  createRecurring as createRecurringServer,
+  createSalary as createSalaryServer,
   createTransaction,
+  deleteAccount as deleteAccountServer,
+  deleteDebt as deleteDebtServer,
+  deleteGoal as deleteGoalServer,
+  deleteMission as deleteMissionServer,
+  deletePlan as deletePlanServer,
+  deleteRecurring as deleteRecurringServer,
+  deleteSalary as deleteSalaryServer,
   fetchSnapshot,
   payDebt as payDebtServer,
   setPrimaryMission as setPrimaryMissionServer,
+  updateAccount as updateAccountServer,
+  updateDebt as updateDebtServer,
+  updateGoal as updateGoalServer,
+  updateMission as updateMissionServer,
+  updatePlan as updatePlanServer,
+  updateRecurring as updateRecurringServer,
+  updateSalary as updateSalaryServer,
 } from "@/features/shared/actions";
 
 /** Domínios que suportam "Limpar tudo" por página. */
@@ -40,27 +61,71 @@ interface FinancialState {
   hydrated: boolean;
   /** true quando ligado ao Supabase (utilizador autenticado). */
   live: boolean;
+  /** true depois do primeiro carregamento do servidor (modo live). */
+  serverLoaded: boolean;
   setLive: (v: boolean) => void;
   setSnapshot: (s: FinancialSnapshot) => void;
   refresh: () => Promise<void>;
-  // ações
+
+  // Contas
   addAccount: (acc: Omit<BankAccount, "id" | "createdAt">) => void;
+  updateAccount: (id: string, patch: Partial<Omit<BankAccount, "id" | "createdAt">>) => void;
+  deleteAccount: (id: string) => void;
+
+  // Transações
   addTransaction: (tx: Omit<Transaction, "id">) => void;
+
+  // Salários
+  addSalary: (s: Omit<Salary, "id">) => void;
+  updateSalary: (id: string, patch: Partial<Omit<Salary, "id">>) => void;
+  deleteSalary: (id: string) => void;
+
+  // Recorrentes
+  addRecurring: (r: Omit<RecurringPayment, "id">) => void;
+  updateRecurring: (id: string, patch: Partial<Omit<RecurringPayment, "id">>) => void;
+  deleteRecurring: (id: string) => void;
+
+  // Dívidas
   addDebt: (debt: Omit<Debt, "id" | "paidAmount" | "paidInstallments" | "status" | "history">) => void;
+  updateDebt: (id: string, patch: Partial<Omit<Debt, "id" | "history">>) => void;
+  deleteDebt: (id: string) => void;
   /** Regista um pagamento (parcial ou total) de uma dívida. Se `accountId` for
    *  passado, debita o valor dessa conta e cria uma transação de despesa. */
   payDebt: (debtId: string, amount: number, accountId?: string) => void;
+
+  // Metas
   addGoal: (goal: Omit<Goal, "id" | "currentAmount" | "status">) => void;
+  updateGoal: (id: string, patch: Partial<Omit<Goal, "id">>) => void;
+  deleteGoal: (id: string) => void;
   contributeToGoal: (goalId: string, amount: number) => void;
+
+  // Missões
   addMission: (mission: Omit<Mission, "id" | "createdAt" | "status">) => void;
+  updateMission: (id: string, patch: Partial<Omit<Mission, "id" | "createdAt">>) => void;
+  deleteMission: (id: string) => void;
   setPrimaryMission: (missionId: string) => void;
+
+  // Planos
+  addPlan: (plan: Omit<Plan, "id" | "createdAt">) => void;
+  updatePlan: (id: string, patch: Partial<Omit<Plan, "id" | "createdAt">>) => void;
+  deletePlan: (id: string) => void;
+
+  // Salário (wizard)
   applySalary: (received: number, allocation: SalaryAllocationResult) => void;
+
   /** Apaga todos os dados de um domínio (por página). Ação destrutiva. */
   clearDomain: (domain: ClearableDomain) => void;
   reset: () => void;
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+/** Em modo live nada é persistido localmente (a fonte de verdade é o Supabase). */
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
 
 export const useFinancialStore = create<FinancialState>()(
   persist(
@@ -71,19 +136,32 @@ export const useFinancialStore = create<FinancialState>()(
         void op.then(() => get().refresh()).catch(() => {});
       };
 
+      /** Helper imutável por coleção. */
+      const patchList = <T extends { id: string }>(
+        list: T[],
+        id: string,
+        patch: Partial<NoInfer<T>>,
+      ) => list.map((item) => (item.id === id ? { ...item, ...patch } : item));
+
       return {
-        snapshot: buildSeed(),
+        snapshot: isDemoMode ? buildSeed() : buildEmptySnapshot(),
         hydrated: false,
         live: false,
+        serverLoaded: false,
 
         setLive: (v) => set({ live: v }),
         setSnapshot: (s) => set({ snapshot: s }),
         refresh: async () => {
           if (!get().live) return;
-          const snap = await fetchSnapshot();
-          if (snap) set({ snapshot: snap });
+          try {
+            const snap = await fetchSnapshot();
+            if (snap) set({ snapshot: snap });
+          } finally {
+            set({ serverLoaded: true });
+          }
         },
 
+        // ── Contas ────────────────────────────────────────────
         addAccount: (acc) => {
           set((s) => ({
             snapshot: {
@@ -97,6 +175,29 @@ export const useFinancialStore = create<FinancialState>()(
           sync(createAccount(acc));
         },
 
+        updateAccount: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              accounts: patchList(s.snapshot.accounts, id, patch),
+            },
+          }));
+          sync(updateAccountServer(id, patch));
+        },
+
+        deleteAccount: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              accounts: s.snapshot.accounts.filter((a) => a.id !== id),
+              // Transações da conta caem junto (espelha o cascade da BD).
+              transactions: s.snapshot.transactions.filter((t) => t.accountId !== id),
+            },
+          }));
+          sync(deleteAccountServer(id));
+        },
+
+        // ── Transações ────────────────────────────────────────
         addTransaction: (tx) => {
           set((s) => {
             const transaction: Transaction = { ...tx, id: uid("tx") };
@@ -116,6 +217,69 @@ export const useFinancialStore = create<FinancialState>()(
           sync(createTransaction(tx));
         },
 
+        // ── Salários ──────────────────────────────────────────
+        addSalary: (salary) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              salaries: [...s.snapshot.salaries, { ...salary, id: uid("sal") }],
+            },
+          }));
+          sync(createSalaryServer(salary));
+        },
+
+        updateSalary: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              salaries: patchList(s.snapshot.salaries, id, patch),
+            },
+          }));
+          sync(updateSalaryServer(id, patch));
+        },
+
+        deleteSalary: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              salaries: s.snapshot.salaries.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteSalaryServer(id));
+        },
+
+        // ── Recorrentes ───────────────────────────────────────
+        addRecurring: (r) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              recurring: [...s.snapshot.recurring, { ...r, id: uid("rec") }],
+            },
+          }));
+          sync(createRecurringServer(r));
+        },
+
+        updateRecurring: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              recurring: patchList(s.snapshot.recurring, id, patch),
+            },
+          }));
+          sync(updateRecurringServer(id, patch));
+        },
+
+        deleteRecurring: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              recurring: s.snapshot.recurring.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteRecurringServer(id));
+        },
+
+        // ── Dívidas ───────────────────────────────────────────
         addDebt: (debt) => {
           set((s) => ({
             snapshot: {
@@ -134,6 +298,26 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(createDebt(debt));
+        },
+
+        updateDebt: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              debts: patchList(s.snapshot.debts, id, patch),
+            },
+          }));
+          sync(updateDebtServer(id, patch));
+        },
+
+        deleteDebt: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              debts: s.snapshot.debts.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteDebtServer(id));
         },
 
         payDebt: (debtId, amount, accountId) => {
@@ -178,7 +362,7 @@ export const useFinancialStore = create<FinancialState>()(
                 type: "despesa",
                 amount: applied,
                 category: "outros",
-                description: `Pagamento — ${target.creditor}`,
+                description: `Pagamento a ${target.creditor}`,
                 date: today(),
               };
               transactions = [tx, ...transactions];
@@ -190,6 +374,7 @@ export const useFinancialStore = create<FinancialState>()(
           sync(payDebtServer({ debtId, amount, accountId, date: today() }));
         },
 
+        // ── Metas ─────────────────────────────────────────────
         addGoal: (goal) => {
           set((s) => ({
             snapshot: {
@@ -201,6 +386,26 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(createGoal(goal));
+        },
+
+        updateGoal: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              goals: patchList(s.snapshot.goals, id, patch),
+            },
+          }));
+          sync(updateGoalServer(id, patch));
+        },
+
+        deleteGoal: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              goals: s.snapshot.goals.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteGoalServer(id));
         },
 
         contributeToGoal: (goalId, amount) => {
@@ -222,6 +427,7 @@ export const useFinancialStore = create<FinancialState>()(
           sync(contributeGoal(goalId, amount));
         },
 
+        // ── Missões ───────────────────────────────────────────
         addMission: (mission) => {
           set((s) => ({
             snapshot: {
@@ -237,6 +443,26 @@ export const useFinancialStore = create<FinancialState>()(
           sync(createMission(mission));
         },
 
+        updateMission: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              missions: patchList(s.snapshot.missions, id, patch),
+            },
+          }));
+          sync(updateMissionServer(id, patch));
+        },
+
+        deleteMission: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              missions: s.snapshot.missions.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteMissionServer(id));
+        },
+
         setPrimaryMission: (missionId) => {
           set((s) => ({
             snapshot: {
@@ -250,6 +476,38 @@ export const useFinancialStore = create<FinancialState>()(
           sync(setPrimaryMissionServer(missionId));
         },
 
+        // ── Planos ────────────────────────────────────────────
+        addPlan: (plan) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              plans: [...s.snapshot.plans, { ...plan, id: uid("plan"), createdAt: today() }],
+            },
+          }));
+          sync(createPlanServer(plan));
+        },
+
+        updatePlan: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              plans: patchList(s.snapshot.plans, id, patch),
+            },
+          }));
+          sync(updatePlanServer(id, patch));
+        },
+
+        deletePlan: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              plans: s.snapshot.plans.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deletePlanServer(id));
+        },
+
+        // ── Wizard de salário ─────────────────────────────────
         applySalary: (received, allocation) => {
           const state = get();
           const primaryAccount =
@@ -332,7 +590,7 @@ export const useFinancialStore = create<FinancialState>()(
             const snapshot = { ...s.snapshot };
             switch (domain) {
               case "accounts":
-                // Transações pertencem a contas — sem contas, ficam órfãs.
+                // Transações pertencem a contas; sem contas, ficam órfãs.
                 snapshot.accounts = [];
                 snapshot.transactions = [];
                 break;
@@ -354,11 +612,15 @@ export const useFinancialStore = create<FinancialState>()(
           sync(clearDomainServer(domain));
         },
 
-        reset: () => set({ snapshot: buildSeed() }),
+        reset: () => set({ snapshot: isDemoMode ? buildSeed() : buildEmptySnapshot() }),
       };
     },
     {
       name: "kwanzaflow-demo",
+      // Em modo live, a fonte de verdade é o Supabase: nada fica no localStorage.
+      storage: createJSONStorage(() =>
+        isDemoMode && typeof window !== "undefined" ? window.localStorage : (noopStorage as never),
+      ),
       partialize: (s) => ({ snapshot: s.snapshot }),
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;

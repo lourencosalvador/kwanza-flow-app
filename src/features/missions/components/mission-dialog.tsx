@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFinancialStore } from "@/store/financial-store";
-import type { MissionKind } from "@/types/domain";
+import type { Mission, MissionKind } from "@/types/domain";
 
 const KINDS: { value: MissionKind; label: string }[] = [
   { value: "poupar", label: "Guardar dinheiro" },
@@ -32,9 +32,24 @@ const KINDS: { value: MissionKind; label: string }[] = [
   { value: "negocio", label: "Abrir negócio" },
 ];
 
-export function AddMissionDialog() {
-  const [open, setOpen] = React.useState(false);
+/** Cria (sem `mission`) ou edita (com `mission`) uma missão. */
+export function MissionDialog({
+  mission,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  mission?: Mission;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const isEdit = !!mission;
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
+
   const addMission = useFinancialStore((s) => s.addMission);
+  const updateMission = useFinancialStore((s) => s.updateMission);
+  const setPrimaryMission = useFinancialStore((s) => s.setPrimaryMission);
 
   const [title, setTitle] = React.useState("");
   const [kind, setKind] = React.useState<MissionKind>("poupar");
@@ -42,33 +57,60 @@ export function AddMissionDialog() {
   const [deadline, setDeadline] = React.useState("");
   const [primary, setPrimary] = React.useState(true);
 
+  React.useEffect(() => {
+    if (!open) return;
+    if (mission) {
+      setTitle(mission.title);
+      setKind(mission.kind);
+      setTarget(mission.targetAmount ?? 0);
+      setDeadline(mission.deadline ?? "");
+      setPrimary(mission.isPrimary);
+    } else {
+      setTitle("");
+      setKind("poupar");
+      setTarget(0);
+      setDeadline("");
+      setPrimary(true);
+    }
+  }, [open, mission]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!title) return;
-    addMission({
-      title,
-      kind,
-      targetAmount: target || undefined,
-      deadline: deadline || undefined,
-      isPrimary: primary,
-    });
-    toast.success("Missão criada", { description: title });
-    setTitle("");
-    setTarget(0);
-    setDeadline("");
+    if (isEdit && mission) {
+      updateMission(mission.id, {
+        title,
+        kind,
+        targetAmount: target || undefined,
+        deadline: deadline || undefined,
+      });
+      if (primary && !mission.isPrimary) setPrimaryMission(mission.id);
+      toast.success("Missão atualizada", { description: title });
+    } else {
+      addMission({
+        title,
+        kind,
+        targetAmount: target || undefined,
+        deadline: deadline || undefined,
+        isPrimary: primary,
+      });
+      toast.success("Missão criada", { description: title });
+    }
     setOpen(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-1.5">
-          <Plus className="size-4" /> Nova missão
-        </Button>
-      </DialogTrigger>
+      {!isEdit && (
+        <DialogTrigger asChild>
+          <Button className="gap-1.5">
+            <Plus className="size-4" /> Nova missão
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar missão</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar missão" : "Criar missão"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
@@ -100,7 +142,9 @@ export function AddMissionDialog() {
             <span className="text-sm font-medium">Definir como missão principal</span>
             <Switch checked={primary} onCheckedChange={setPrimary} />
           </label>
-          <Button type="submit" className="w-full">Criar missão</Button>
+          <Button type="submit" className="w-full">
+            {isEdit ? "Guardar alterações" : "Criar missão"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

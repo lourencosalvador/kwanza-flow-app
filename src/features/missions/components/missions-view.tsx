@@ -1,7 +1,9 @@
 "use client";
 
+import * as React from "react";
 import { motion } from "framer-motion";
 import { Flag, Sparkles, Star } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,17 +11,21 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ClearAllButton } from "@/components/shared/clear-all-button";
-import { AddMissionDialog } from "@/features/missions/components/add-mission-dialog";
+import { EntityMenu } from "@/components/shared/entity-menu";
+import { MissionDialog } from "@/features/missions/components/mission-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Mission } from "@/types/domain";
 
 export function MissionsView() {
   const mounted = useMounted();
   const missions = useFinancialStore((s) => s.snapshot.missions);
   const setPrimary = useFinancialStore((s) => s.setPrimaryMission);
+  const deleteMission = useFinancialStore((s) => s.deleteMission);
   const report = useFinancialReport();
+  const [editing, setEditing] = React.useState<Mission | null>(null);
 
   if (!mounted) return <Skeleton className="h-96 w-full rounded-xl" />;
 
@@ -35,7 +41,7 @@ export function MissionsView() {
         action={
           <>
             <ClearAllButton domain="missions" itemsLabel="todas as suas missões" count={missions.length} />
-            <AddMissionDialog />
+            <MissionDialog />
           </>
         }
       />
@@ -49,9 +55,19 @@ export function MissionsView() {
               <Card className="relative overflow-hidden border-primary/30 gap-0">
                 <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/15 blur-3xl" />
                 <CardContent className="p-6">
-                  <Badge variant="default" className="gap-1">
-                    <Star className="size-3" /> Missão principal
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="default" className="gap-1">
+                      <Star className="size-3" /> Missão principal
+                    </Badge>
+                    <EntityMenu
+                      label={`a missão "${primary.title}"`}
+                      onEdit={() => setEditing(primary)}
+                      onDelete={() => {
+                        deleteMission(primary.id);
+                        toast.success("Missão removida", { description: primary.title });
+                      }}
+                    />
+                  </div>
                   <h3 className="mt-3 text-2xl font-semibold tracking-tight">{primary.title}</h3>
 
                   {primary.targetAmount && (
@@ -90,9 +106,19 @@ export function MissionsView() {
               {others.map((m) => (
                 <Card key={m.id} className="gap-0">
                   <CardContent className="p-5">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Flag className="size-4" />
-                      {m.status === "concluida" ? "Concluída" : "Ativa"}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Flag className="size-4" />
+                        {m.status === "concluida" ? "Concluída" : "Ativa"}
+                      </div>
+                      <EntityMenu
+                        label={`a missão "${m.title}"`}
+                        onEdit={() => setEditing(m)}
+                        onDelete={() => {
+                          deleteMission(m.id);
+                          toast.success("Missão removida", { description: m.title });
+                        }}
+                      />
                     </div>
                     <p className="mt-2 font-medium">{m.title}</p>
                     {m.targetAmount && (
@@ -111,6 +137,14 @@ export function MissionsView() {
             </div>
           )}
         </div>
+      )}
+
+      {editing && (
+        <MissionDialog
+          mission={editing}
+          open={!!editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
       )}
     </div>
   );

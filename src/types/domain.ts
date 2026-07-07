@@ -150,6 +150,21 @@ export interface Mission {
   createdAt: ISODate;
 }
 
+export interface PlanTask {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+export interface Plan {
+  id: UUID;
+  title: string; // "Plano Julho", "Plano Viagem"
+  period: string; // "Mensal", "Objetivo", "Longo prazo"
+  budget: number;
+  tasks: PlanTask[];
+  createdAt: ISODate;
+}
+
 export type TimelineEventKind =
   | "salario"
   | "divida_quitada"
@@ -220,4 +235,5 @@ export interface FinancialSnapshot {
   recurring: RecurringPayment[];
   goals: Goal[];
   missions: Mission[];
+  plans: Plan[];
 }

@@ -40,7 +40,7 @@ export function allocateSalary(input: SalaryAllocationInput): SalaryAllocationRe
       detail: input.recurring.map((r) => r.label).join(", "),
     });
     rationale.push(
-      `Reservei ${round(essentialsPaid).toLocaleString("pt-AO")} Kz para cobrir os pagamentos essenciais (${input.recurring.length} compromissos fixos) — estes vêm sempre primeiro para garantir estabilidade.`,
+      `Reservei ${round(essentialsPaid).toLocaleString("pt-AO")} Kz para cobrir os pagamentos essenciais (${input.recurring.length} compromissos fixos). Estes vêm sempre primeiro para garantir estabilidade.`,
     );
     if (essentialsPaid < totalEssentials) {
       rationale.push(
@@ -95,7 +95,7 @@ export function allocateSalary(input: SalaryAllocationInput): SalaryAllocationRe
       detail: "Pague-se a si primeiro",
     });
     rationale.push(
-      `Guardei ${round(savings).toLocaleString("pt-AO")} Kz para a sua poupança/objetivos — é assim que se constrói património de forma consistente.`,
+      `Guardei ${round(savings).toLocaleString("pt-AO")} Kz para a sua poupança/objetivos. É assim que se constrói património de forma consistente.`,
     );
   } else if (input.savingsTarget > 0) {
     rationale.push(

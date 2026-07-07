@@ -2,7 +2,7 @@
   "name": "kwanza-flow",
   "version": "0.1.0",
   "private": true,
-  "description": "KwanzaFlow AI — Sistema Operativo Financeiro pessoal",
+  "description": "KwanzaFlow AI: Sistema Operativo Financeiro pessoal",
   "type": "module",
   "scripts": {
     "dev": "next dev",

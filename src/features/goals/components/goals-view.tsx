@@ -18,20 +18,24 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ClearAllButton } from "@/components/shared/clear-all-button";
-import { AddGoalDialog } from "@/features/goals/components/add-goal-dialog";
+import { EntityMenu } from "@/components/shared/entity-menu";
+import { GoalDialog } from "@/features/goals/components/goal-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatMonths } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Goal } from "@/types/domain";
 
 export function GoalsView() {
   const mounted = useMounted();
   const goals = useFinancialStore((s) => s.snapshot.goals);
   const contribute = useFinancialStore((s) => s.contributeToGoal);
+  const deleteGoal = useFinancialStore((s) => s.deleteGoal);
   const report = useFinancialReport();
 
   const [activeGoal, setActiveGoal] = React.useState<string | null>(null);
   const [amount, setAmount] = React.useState<number>(0);
+  const [editing, setEditing] = React.useState<Goal | null>(null);
 
   if (!mounted) return <Skeleton className="h-96 w-full rounded-xl" />;
 
@@ -51,7 +55,7 @@ export function GoalsView() {
         action={
           <>
             <ClearAllButton domain="goals" itemsLabel="todas as suas metas" count={goals.length} />
-            <AddGoalDialog />
+            <GoalDialog />
           </>
         }
       />
@@ -79,13 +83,23 @@ export function GoalsView() {
                           <p className="truncate text-xs text-muted-foreground">{g.description}</p>
                         )}
                       </div>
-                      {g.status === "concluida" ? (
-                        <Badge variant="success">Concluída</Badge>
-                      ) : projection?.onTrack ? (
-                        <Badge variant="default">No caminho</Badge>
-                      ) : (
-                        <Badge variant="warning">Atrasada</Badge>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {g.status === "concluida" ? (
+                          <Badge variant="success">Concluída</Badge>
+                        ) : projection?.onTrack ? (
+                          <Badge variant="default">No caminho</Badge>
+                        ) : (
+                          <Badge variant="warning">Atrasada</Badge>
+                        )}
+                        <EntityMenu
+                          label={`a meta "${g.title}"`}
+                          onEdit={() => setEditing(g)}
+                          onDelete={() => {
+                            deleteGoal(g.id);
+                            toast.success("Meta removida", { description: g.title });
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div className="mt-4 flex items-end justify-between">
@@ -102,7 +116,7 @@ export function GoalsView() {
                       <span>{pct}%</span>
                       {projection?.monthsToComplete != null && g.status !== "concluida" && (
                         <span>
-                          ~{projection.monthsToComplete} meses
+                          ~{formatMonths(projection.monthsToComplete)}
                           {projection.projectedDate ? ` · ${formatDate(projection.projectedDate)}` : ""}
                         </span>
                       )}
@@ -127,6 +141,14 @@ export function GoalsView() {
             );
           })}
         </div>
+      )}
+
+      {editing && (
+        <GoalDialog
+          goal={editing}
+          open={!!editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
       )}
 
       <Dialog open={!!activeGoal} onOpenChange={(o) => !o && setActiveGoal(null)}>

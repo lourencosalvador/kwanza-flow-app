@@ -5,7 +5,7 @@
  * Mantém a promessa "sempre baseado em dados reais".
  */
 
-import { formatCurrency, formatPercent } from "@/lib/format";
+import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 import type { FinancialReport } from "@/lib/financial-engine/types";
 import type { Mission } from "@/types/domain";
 
@@ -30,7 +30,7 @@ export function localAdvice(
     if (amount) {
       const fits = amount <= cashFlow.monthlyCapacity;
       const savingsImpact = formatPercent(amount / Math.max(1, netWorth.savings));
-      return `Com base nos seus dados: a sua capacidade de poupança mensal é ${formatCurrency(cashFlow.monthlyCapacity)}. Uma compra de ${formatCurrency(amount)} ${fits ? "cabe no seu mês sem comprometer o essencial" : "ultrapassa a sua margem mensal — sairia da poupança"} e representa ${savingsImpact} da sua poupança atual. ${primary ? `Lembre-se da missão "${primary.title}": ${fits ? "esta compra não a compromete significativamente." : "esta compra afasta-o dela."}` : ""} Sugiro usar o Simulador para ver o impacto completo.`;
+      return `Com base nos seus dados: a sua capacidade de poupança mensal é ${formatCurrency(cashFlow.monthlyCapacity)}. Uma compra de ${formatCurrency(amount)} ${fits ? "cabe no seu mês sem comprometer o essencial" : "ultrapassa a sua margem mensal e sairia da poupança"} e representa ${savingsImpact} da sua poupança atual. ${primary ? `Lembre-se da missão "${primary.title}": ${fits ? "esta compra não a compromete significativamente." : "esta compra afasta-o dela."}` : ""} Sugiro usar o Simulador para ver o impacto completo.`;
     }
     return `Diga-me o valor e eu avalio com os seus números reais. Hoje a sua capacidade de poupança mensal é ${formatCurrency(cashFlow.monthlyCapacity)} e a poupança disponível é ${formatCurrency(netWorth.savings)}.`;
   }
@@ -44,7 +44,7 @@ export function localAdvice(
   if (/(quando atinjo|quando alcanço|minha meta|atingir a meta)/.test(q)) {
     if (goals.length) {
       const g = goals[0];
-      return `A meta "${g.title}" está ${formatPercent(g.progress)} concluída. Faltam ${formatCurrency(g.remaining)} e, ao ritmo de ${formatCurrency(g.monthlyContribution)}/mês, atinge-a em cerca de ${g.monthsToComplete ?? "—"} meses${g.projectedDate ? ` (≈ ${g.projectedDate})` : ""}. ${g.onTrack ? "Está dentro do prazo. 👏" : "Para cumprir o prazo, terá de reforçar a contribuição mensal."}`;
+      return `A meta "${g.title}" está ${formatPercent(g.progress)} concluída. Faltam ${formatCurrency(g.remaining)} e, ao ritmo de ${formatCurrency(g.monthlyContribution)}/mês, atinge-a em cerca de ${formatMonths(g.monthsToComplete)}${g.projectedDate ? ` (≈ ${g.projectedDate})` : ""}. ${g.onTrack ? "Está dentro do prazo. 👏" : "Para cumprir o prazo, terá de reforçar a contribuição mensal."}`;
     }
     return "Ainda não tem metas definidas. Crie uma na secção Metas e eu projeto a data de conclusão.";
   }
@@ -52,7 +52,7 @@ export function localAdvice(
   // Estou a gastar muito?
   if (/(gastando muito|gasto muito|gastar muito|a gastar muito)/.test(q)) {
     const top = budget.byCategory[0];
-    return `As suas despesas do mês somam ${formatCurrency(budget.totalExpenses)}, das quais ${formatPercent(budget.essentialShare)} são essenciais. ${top ? `A maior categoria é "${top.category}" com ${formatCurrency(top.amount)} (${formatPercent(top.share)}).` : ""} A sua taxa de poupança é ${formatPercent(cashFlow.savingsRate)} — ${cashFlow.savingsRate >= 0.2 ? "saudável." : "abaixo dos 20% recomendados; vale a pena cortar no discricionário."}`;
+    return `As suas despesas do mês somam ${formatCurrency(budget.totalExpenses)}, das quais ${formatPercent(budget.essentialShare)} são essenciais. ${top ? `A maior categoria é "${top.category}" com ${formatCurrency(top.amount)} (${formatPercent(top.share)}).` : ""} A sua taxa de poupança é ${formatPercent(cashFlow.savingsRate)}: ${cashFlow.savingsRate >= 0.2 ? "saudável." : "abaixo dos 20% recomendados; vale a pena cortar no discricionário."}`;
   }
 
   // Onde economizar?
@@ -71,7 +71,7 @@ export function localAdvice(
   if (/(dívida|divida|emprést|emprest|eliminar dívidas)/.test(q)) {
     if (debts.totalOutstanding <= 0) return "Boas notícias: não tem dívidas em aberto. 🎉 Mantenha o foco em construir património.";
     const order = debts.payoffOrder.map((d) => d.creditor).join(" → ");
-    return `Tem ${formatCurrency(debts.totalOutstanding)} em dívidas. Estratégia recomendada (avalanche por prioridade): ${order}. Dedicando ~40% da sua margem mensal, fica sem dívidas em cerca de ${debts.monthsToDebtFree ?? "—"} meses. Cada Kwanza abatido liberta fluxo de caixa futuro.`;
+    return `Tem ${formatCurrency(debts.totalOutstanding)} em dívidas. Estratégia recomendada (avalanche por prioridade): ${order}. Dedicando ~40% da sua margem mensal, fica sem dívidas em cerca de ${formatMonths(debts.monthsToDebtFree)}. Cada Kwanza abatido liberta fluxo de caixa futuro.`;
   }
 
   // Resumo geral / saudação

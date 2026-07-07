@@ -80,6 +80,12 @@ export function formatRelativeDays(target: Date | string, from: Date = new Date(
   return rtf.format(diff, "day");
 }
 
+/** "1 mês" / "5 meses" com singular correto. */
+export function formatMonths(n: number | null | undefined) {
+  if (n == null) return "sem previsão";
+  return n === 1 ? "1 mês" : `${n} meses`;
+}
+
 /** Saudação dependente da hora ("Bom dia", "Boa tarde", "Boa noite"). */
 export function greeting(date: Date = new Date()) {
   const h = date.getHours();
