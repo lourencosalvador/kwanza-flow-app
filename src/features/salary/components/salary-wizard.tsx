@@ -66,6 +66,10 @@ export function SalaryWizard() {
   const [selectedRecurring, setSelectedRecurring] = React.useState<Set<string>>(
     new Set(snapshot.recurring.filter((r) => r.active).map((r) => r.id)),
   );
+  // Valor a descontar de cada recorrente NESTE salário (pode diferir do fixo).
+  const [recurringAmounts, setRecurringAmounts] = React.useState<Record<string, number>>(
+    Object.fromEntries(snapshot.recurring.map((r) => [r.id, r.amount])),
+  );
   const [savingsTarget, setSavingsTarget] = React.useState<number>(
     snapshot.goals[0]?.monthlyContribution ?? 100_000,
   );
@@ -77,6 +81,9 @@ export function SalaryWizard() {
       setReceived(snapshot.salaries[0]?.amount ?? 0);
       setSelectedRecurring(
         new Set(snapshot.recurring.filter((r) => r.active).map((r) => r.id)),
+      );
+      setRecurringAmounts(
+        Object.fromEntries(snapshot.recurring.map((r) => [r.id, r.amount])),
       );
       setSavingsTarget(snapshot.goals[0]?.monthlyContribution ?? 100_000);
     }
@@ -95,10 +102,18 @@ export function SalaryWizard() {
       })),
       recurring: snapshot.recurring
         .filter((r) => selectedRecurring.has(r.id))
-        .map((r) => ({ id: r.id, label: r.label, amount: r.amount })),
+        .map((r) => ({
+          id: r.id,
+          label: r.label,
+          amount: Math.max(0, recurringAmounts[r.id] ?? r.amount),
+        })),
       savingsTarget,
     });
-  }, [received, openDebts, snapshot.recurring, selectedRecurring, savingsTarget]);
+  }, [received, openDebts, snapshot.recurring, selectedRecurring, recurringAmounts, savingsTarget]);
+
+  const totalRecurringSelected = snapshot.recurring
+    .filter((r) => selectedRecurring.has(r.id))
+    .reduce((s, r) => s + Math.max(0, recurringAmounts[r.id] ?? r.amount), 0);
 
   function confirm() {
     applySalary(received, allocation);
@@ -244,32 +259,76 @@ export function SalaryWizard() {
               {step === 3 && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Selecione os pagamentos recorrentes a cobrir com este salário.
+                    Escolha o que descontar deste salário e ajuste o valor de cada um
+                    se necessário (não altera a sua configuração fixa).
                   </p>
-                  {snapshot.recurring.map((r) => (
-                    <label
-                      key={r.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border border-border px-3 py-2.5"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{r.label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatCurrency(r.amount)} · dia {r.dayOfMonth}
-                        </p>
+                  {snapshot.recurring.length === 0 && (
+                    <p className="rounded-lg bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                      Sem pagamentos recorrentes configurados.
+                    </p>
+                  )}
+                  {snapshot.recurring.map((r) => {
+                    const on = selectedRecurring.has(r.id);
+                    const custom = recurringAmounts[r.id] ?? r.amount;
+                    const edited = custom !== r.amount;
+                    return (
+                      <div
+                        key={r.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                          on ? "border-border" : "border-border/50 opacity-60",
+                        )}
+                      >
+                        <Switch
+                          checked={on}
+                          onCheckedChange={(v) =>
+                            setSelectedRecurring((prev) => {
+                              const next = new Set(prev);
+                              if (v) next.add(r.id);
+                              else next.delete(r.id);
+                              return next;
+                            })
+                          }
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{r.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            fixo {formatCurrency(r.amount)} · dia {r.dayOfMonth}
+                            {edited && on && (
+                              <span className="ml-1 text-primary">· ajustado</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="relative w-28 shrink-0">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            disabled={!on}
+                            value={on ? (custom || "") : ""}
+                            onChange={(e) =>
+                              setRecurringAmounts((prev) => ({
+                                ...prev,
+                                [r.id]: Number(e.target.value),
+                              }))
+                            }
+                            className="h-9 pr-8 text-right text-sm tabular-nums"
+                          />
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            Kz
+                          </span>
+                        </div>
                       </div>
-                      <Switch
-                        checked={selectedRecurring.has(r.id)}
-                        onCheckedChange={(v) =>
-                          setSelectedRecurring((prev) => {
-                            const next = new Set(prev);
-                            if (v) next.add(r.id);
-                            else next.delete(r.id);
-                            return next;
-                          })
-                        }
-                      />
-                    </label>
-                  ))}
+                    );
+                  })}
+
+                  {snapshot.recurring.length > 0 && (
+                    <div className="mt-2 flex items-center justify-between rounded-lg bg-muted px-3 py-2.5 text-sm">
+                      <span className="font-medium">Total a descontar</span>
+                      <span className="font-semibold tabular-nums">
+                        {formatCurrency(totalRecurringSelected)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
