@@ -10,6 +10,17 @@ export async function middleware(request: NextRequest) {
   // Em modo demonstração não há autenticação obrigatória.
   if (isDemoMode) return response;
 
+  // NUNCA redirecionar pedidos de prefetch do Next.js. Caso contrário, o
+  // router pode cachear um redirecionamento e, ao clicar num link (ex.:
+  // Dívidas/Analytics), seguir esse redirecionamento cacheado até ao Painel.
+  // A decisão de auth fica para a navegação real.
+  const isPrefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("x-middleware-prefetch") === "1" ||
+    (request.headers.get("sec-purpose") ?? "").includes("prefetch");
+  if (isPrefetch) return response;
+
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 
