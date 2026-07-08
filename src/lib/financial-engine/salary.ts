@@ -55,30 +55,56 @@ export function allocateSalary(input: SalaryAllocationInput): SalaryAllocationRe
       PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority] ||
       b.outstanding - a.outstanding,
   );
-  // Até 40% do que sobra dos essenciais vai para dívidas (ajustado se houver crítica).
   const hasCritical = sortedDebts.some((d) => d.priority === "critica");
-  const debtShare = hasCritical ? 0.55 : 0.4;
-  let debtBudget = remaining * debtShare;
+  // Modo MANUAL: o utilizador escolheu quanto pagar a cada dívida.
+  const manual = input.debts.some((d) => d.payment != null);
   let totalDebts = 0;
-  for (const d of sortedDebts) {
-    if (debtBudget <= 0) break;
-    const pay = Math.min(debtBudget, d.outstanding);
-    if (pay <= 0) continue;
-    debtBudget -= pay;
-    remaining -= pay;
-    totalDebts += pay;
-    lines.push({
-      bucket: "dividas",
-      label: `Dívida · ${d.creditor}`,
-      amount: round(pay),
-      share: pay / received,
-      detail: `Prioridade ${d.priority}`,
-    });
-  }
-  if (totalDebts > 0) {
-    rationale.push(
-      `Direcionei ${round(totalDebts).toLocaleString("pt-AO")} Kz para abater dívidas, começando pelas de maior prioridade${hasCritical ? " (há dívida crítica, por isso reforcei este valor)" : ""}. Reduzir dívida liberta fluxo de caixa futuro.`,
-    );
+
+  if (manual) {
+    for (const d of sortedDebts) {
+      if (remaining <= 0) break;
+      const wanted = Math.max(0, d.payment ?? 0);
+      const pay = Math.min(wanted, d.outstanding, remaining);
+      if (pay <= 0) continue;
+      remaining -= pay;
+      totalDebts += pay;
+      lines.push({
+        bucket: "dividas",
+        label: `Dívida · ${d.creditor}`,
+        amount: round(pay),
+        share: pay / received,
+        detail: `Prioridade ${d.priority}`,
+      });
+    }
+    if (totalDebts > 0) {
+      rationale.push(
+        `Paguei ${round(totalDebts).toLocaleString("pt-AO")} Kz de dívidas, conforme os valores que escolheu para cada credor. Reduzir dívida liberta fluxo de caixa futuro.`,
+      );
+    }
+  } else {
+    // Modo AUTOMÁTICO: distribui ~40% do que sobra (55% se houver crítica).
+    const debtShare = hasCritical ? 0.55 : 0.4;
+    let debtBudget = remaining * debtShare;
+    for (const d of sortedDebts) {
+      if (debtBudget <= 0) break;
+      const pay = Math.min(debtBudget, d.outstanding);
+      if (pay <= 0) continue;
+      debtBudget -= pay;
+      remaining -= pay;
+      totalDebts += pay;
+      lines.push({
+        bucket: "dividas",
+        label: `Dívida · ${d.creditor}`,
+        amount: round(pay),
+        share: pay / received,
+        detail: `Prioridade ${d.priority}`,
+      });
+    }
+    if (totalDebts > 0) {
+      rationale.push(
+        `Direcionei ${round(totalDebts).toLocaleString("pt-AO")} Kz para abater dívidas, começando pelas de maior prioridade${hasCritical ? " (há dívida crítica, por isso reforcei este valor)" : ""}. Reduzir dívida liberta fluxo de caixa futuro.`,
+      );
+    }
   }
 
   // 3. Poupança / objetivos

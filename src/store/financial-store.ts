@@ -45,6 +45,7 @@ import {
   updateGoal as updateGoalServer,
   updateMission as updateMissionServer,
   updatePlan as updatePlanServer,
+  updateProfile as updateProfileServer,
   updateRecurring as updateRecurringServer,
   updateSalary as updateSalaryServer,
   updateStrategy as updateStrategyServer,
@@ -111,6 +112,9 @@ interface FinancialState {
   addPlan: (plan: Omit<Plan, "id" | "createdAt">) => void;
   updatePlan: (id: string, patch: Partial<Omit<Plan, "id" | "createdAt">>) => void;
   deletePlan: (id: string) => void;
+
+  // Perfil (nome, avatar)
+  updateProfileLocal: (patch: { fullName?: string; avatarUrl?: string }) => void;
 
   // Estratégia financeira
   updateStrategy: (patch: Partial<UserStrategy>) => void;
@@ -510,6 +514,21 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(deletePlanServer(id));
+        },
+
+        // ── Perfil ────────────────────────────────────────────
+        updateProfileLocal: (patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              profile: {
+                ...s.snapshot.profile,
+                ...(patch.fullName !== undefined ? { fullName: patch.fullName } : {}),
+                ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
+              },
+            },
+          }));
+          sync(updateProfileServer(patch));
         },
 
         // ── Estratégia financeira ─────────────────────────────

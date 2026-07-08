@@ -322,6 +322,20 @@ export async function clearDomain(
   }
 }
 
+/** Atualiza dados do perfil (nome, avatar). */
+export async function updateProfile(patch: {
+  fullName?: string;
+  avatarUrl?: string;
+}): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.fullName !== undefined) upd.full_name = patch.fullName;
+  if (patch.avatarUrl !== undefined) upd.avatar_url = patch.avatarUrl;
+  if (Object.keys(upd).length)
+    await supabase.from("profiles").update(upd).eq("id", user.id);
+}
+
 /** Atualiza a estratégia financeira do utilizador (perfil). */
 export async function updateStrategy(strategy: UserStrategy): Promise<void> {
   const { supabase, user } = await ctx();

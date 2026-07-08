@@ -63,6 +63,8 @@ export function SalaryWizard() {
   const [received, setReceived] = React.useState<number>(
     snapshot.salaries[0]?.amount ?? 0,
   );
+  const [selectedDebts, setSelectedDebts] = React.useState<Set<string>>(new Set());
+  const [debtAmounts, setDebtAmounts] = React.useState<Record<string, number>>({});
   const [selectedRecurring, setSelectedRecurring] = React.useState<Set<string>>(
     new Set(snapshot.recurring.filter((r) => r.active).map((r) => r.id)),
   );
@@ -79,6 +81,20 @@ export function SalaryWizard() {
     if (open) {
       setStep(1);
       setReceived(snapshot.salaries[0]?.amount ?? 0);
+      const open2 = snapshot.debts.filter((d) => d.status !== "pago");
+      setSelectedDebts(new Set(open2.map((d) => d.id)));
+      setDebtAmounts(
+        Object.fromEntries(
+          open2.map((d) => {
+            const outstanding = Math.max(0, d.totalAmount - d.paidAmount);
+            const suggested =
+              d.installments > 1
+                ? Math.min(outstanding, Math.round(d.totalAmount / d.installments))
+                : outstanding;
+            return [d.id, suggested];
+          }),
+        ),
+      );
       setSelectedRecurring(
         new Set(snapshot.recurring.filter((r) => r.active).map((r) => r.id)),
       );
@@ -99,6 +115,8 @@ export function SalaryWizard() {
         creditor: d.creditor,
         outstanding: Math.max(0, d.totalAmount - d.paidAmount),
         priority: d.priority,
+        // Modo manual: só paga o que o utilizador escolheu (0 se desmarcada).
+        payment: selectedDebts.has(d.id) ? Math.max(0, debtAmounts[d.id] ?? 0) : 0,
       })),
       recurring: snapshot.recurring
         .filter((r) => selectedRecurring.has(r.id))
@@ -109,7 +127,11 @@ export function SalaryWizard() {
         })),
       savingsTarget,
     });
-  }, [received, openDebts, snapshot.recurring, selectedRecurring, recurringAmounts, savingsTarget]);
+  }, [received, openDebts, selectedDebts, debtAmounts, snapshot.recurring, selectedRecurring, recurringAmounts, savingsTarget]);
+
+  const totalDebtsSelected = openDebts
+    .filter((d) => selectedDebts.has(d.id))
+    .reduce((s, d) => s + Math.max(0, debtAmounts[d.id] ?? 0), 0);
 
   const totalRecurringSelected = snapshot.recurring
     .filter((r) => selectedRecurring.has(r.id))
@@ -221,38 +243,86 @@ export function SalaryWizard() {
               )}
 
               {step === 2 && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    As suas dívidas em aberto. O motor vai priorizar o abate pelas
-                    de maior urgência.
+                    Escolha que dívidas pagar com este salário e quanto abater em
+                    cada uma.
                   </p>
                   {openDebts.length === 0 && (
                     <p className="rounded-lg bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
                       Sem dívidas em aberto. 🎉
                     </p>
                   )}
-                  {openDebts.map((d) => (
-                    <div
-                      key={d.id}
-                      className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{d.creditor}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Em aberto: {formatCurrency(d.totalAmount - d.paidAmount)}
-                        </p>
-                      </div>
-                      <Badge
-                        variant={
-                          d.priority === "critica" || d.priority === "alta"
-                            ? "destructive"
-                            : "secondary"
-                        }
+                  {openDebts.map((d) => {
+                    const on = selectedDebts.has(d.id);
+                    const outstanding = Math.max(0, d.totalAmount - d.paidAmount);
+                    const val = debtAmounts[d.id] ?? 0;
+                    return (
+                      <div
+                        key={d.id}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors",
+                          on ? "border-border" : "border-border/50 opacity-60",
+                        )}
                       >
-                        {d.priority}
-                      </Badge>
+                        <Switch
+                          checked={on}
+                          onCheckedChange={(v) =>
+                            setSelectedDebts((prev) => {
+                              const next = new Set(prev);
+                              if (v) next.add(d.id);
+                              else next.delete(d.id);
+                              return next;
+                            })
+                          }
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="flex items-center gap-2 truncate text-sm font-medium">
+                            {d.creditor}
+                            <Badge
+                              variant={
+                                d.priority === "critica" || d.priority === "alta"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {d.priority}
+                            </Badge>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            em aberto {formatCurrency(outstanding)}
+                          </p>
+                        </div>
+                        <div className="relative w-28 shrink-0">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            disabled={!on}
+                            value={on ? (val || "") : ""}
+                            onChange={(e) =>
+                              setDebtAmounts((prev) => ({
+                                ...prev,
+                                [d.id]: Math.min(outstanding, Number(e.target.value)),
+                              }))
+                            }
+                            className="h-9 pr-8 text-right text-sm tabular-nums"
+                          />
+                          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            Kz
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {openDebts.length > 0 && (
+                    <div className="mt-2 flex items-center justify-between rounded-lg bg-muted px-3 py-2.5 text-sm">
+                      <span className="font-medium">Total a pagar de dívidas</span>
+                      <span className="font-semibold tabular-nums">
+                        {formatCurrency(totalDebtsSelected)}
+                      </span>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
 

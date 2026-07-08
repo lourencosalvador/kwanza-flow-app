@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Banknote, Bell, LogOut, Menu } from "lucide-react";
+import { Banknote, Bell, LogOut, Menu, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +79,9 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="ml-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
               <Avatar className="size-8">
+                {profile.avatarUrl && (
+                  <AvatarImage src={profile.avatarUrl} alt={profile.fullName} />
+                )}
                 <AvatarFallback className="bg-primary/15 text-primary">
                   {initials(profile.fullName)}
                 </AvatarFallback>
@@ -98,7 +101,11 @@ export function Topbar() {
                 <Bell className="size-4" /> Conquistas
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>Definições</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/definicoes">
+                <Settings className="size-4" /> Definições
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={signOut}>
               <LogOut className="size-4" /> Terminar sessão

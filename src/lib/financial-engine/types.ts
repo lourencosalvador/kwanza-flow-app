@@ -122,7 +122,14 @@ export interface FinancialReport {
 // ── Alocação de salário (Wizard "Recebi salário") ──────────────
 export interface SalaryAllocationInput {
   received: number;
-  debts: { id: string; creditor: string; outstanding: number; priority: Priority }[];
+  debts: {
+    id: string;
+    creditor: string;
+    outstanding: number;
+    priority: Priority;
+    /** Valor que o utilizador escolheu pagar a ESTA dívida (modo manual). */
+    payment?: number;
+  }[];
   recurring: { id: string; label: string; amount: number }[];
   savingsTarget: number; // quanto o utilizador quer guardar
 }
