@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audit:security": "node --env-file=.env.local scripts/security-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
