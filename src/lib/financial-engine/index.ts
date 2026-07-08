@@ -49,15 +49,24 @@ export function analyze(
     ref,
   );
 
+  // Sem metas → 0 (não há progresso a avaliar), não 100%.
   const goalsOnTrackShare =
     goalProjections.length === 0
-      ? 1
+      ? 0
       : goalProjections.filter((g) => g.onTrack).length / goalProjections.length;
+
+  const hasFinancialData =
+    netWorth.totalAssets > 0 ||
+    netWorth.totalDebt > 0 ||
+    cashFlow.expectedMonthlyIncome > 0 ||
+    cashFlow.monthIncome > 0;
 
   const healthScore = calcHealthScore({
     savingsRate: cashFlow.savingsRate,
     debtRatio: netWorth.debtRatio,
-    hasEmergencyFund: netWorth.savings >= cashFlow.fixedMonthlyExpenses * 3,
+    savings: netWorth.savings,
+    fixedMonthlyExpenses: cashFlow.fixedMonthlyExpenses,
+    hasFinancialData,
     goalsOnTrackShare,
   });
 

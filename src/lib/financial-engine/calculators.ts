@@ -329,18 +329,44 @@ export function forecast(
   };
 }
 
-/** Saúde financeira agregada (0..100) — composição ponderada determinística. */
+/**
+ * Saúde financeira agregada (0..100) — composição ponderada determinística.
+ * Regra: uma conta sem dados começa em 0 e sobe com atividade real. Nenhuma
+ * dimensão oferece pontos por ausência de informação.
+ */
 export function calcHealthScore(args: {
   savingsRate: number;
   debtRatio: number;
-  hasEmergencyFund: boolean;
+  savings: number;
+  fixedMonthlyExpenses: number;
+  /** Há atividade financeira (ativos, dívidas ou rendimento)? */
+  hasFinancialData: boolean;
+  /** Proporção de metas no bom caminho (0 quando não há metas). */
   goalsOnTrackShare: number;
 }): number {
-  const { savingsRate, debtRatio, hasEmergencyFund, goalsOnTrackShare } = args;
+  const { savingsRate, debtRatio, savings, fixedMonthlyExpenses, hasFinancialData, goalsOnTrackShare } = args;
+
+  // Sem qualquer dado financeiro, a saúde ainda não pode ser avaliada.
+  if (!hasFinancialData) return 0;
+
+  // Poupança (0..35): 0% → 0 pts, ≥20% → 35 pts.
   const savingsScore = Math.min(1, Math.max(0, savingsRate / 0.2)) * 35;
-  const debtScore = (1 - Math.min(1, debtRatio)) * 30;
-  const emergencyScore = hasEmergencyFund ? 20 : 0;
+
+  // Dívida (0..30): sem dívida → 30, quanto maior o rácio, menor.
+  const debtScore = (1 - Math.min(1, Math.max(0, debtRatio))) * 30;
+
+  // Fundo de emergência (0..20): cobertura real face a 3 meses de despesa fixa.
+  const emergencyMonths =
+    fixedMonthlyExpenses > 0
+      ? savings / fixedMonthlyExpenses
+      : savings > 0
+        ? 6
+        : 0;
+  const emergencyScore = Math.min(1, emergencyMonths / 3) * 20;
+
+  // Metas (0..15): proporção no bom caminho.
   const goalsScore = Math.min(1, Math.max(0, goalsOnTrackShare)) * 15;
+
   return round(savingsScore + debtScore + emergencyScore + goalsScore);
 }
 
