@@ -87,13 +87,13 @@ export function CalendarView() {
                   className={cn(
                     "min-h-20 rounded-lg border p-1.5 text-left",
                     day ? "border-border/70" : "border-transparent",
-                    isToday && "border-foreground/30 bg-foreground/[0.03]",
+                    isToday && "border-today/50 bg-today/[0.08]",
                   )}
                 >
                   {day && (
                     <>
                       {isToday ? (
-                        <span className="inline-flex size-5 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
+                        <span className="inline-flex size-5 items-center justify-center rounded-full bg-today text-[11px] font-semibold text-white">
                           {day}
                         </span>
                       ) : (
@@ -135,7 +135,7 @@ export function CalendarView() {
           <span className="size-2.5 rounded-full bg-muted-foreground" /> Pagamento
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-foreground" /> Hoje
+          <span className="size-2.5 rounded-full bg-today" /> Hoje
         </span>
       </div>
     </div>

@@ -42,6 +42,8 @@
   --success-foreground: oklch(0.99 0.01 160);
   --warning: oklch(0.74 0.15 75);
   --warning-foreground: oklch(0.25 0.04 75);
+  /* Marcador "hoje" no calendário — azul escuro, distinto do verde/cinzento */
+  --today: oklch(0.48 0.16 255);
 
   --border: oklch(0.922 0.003 247);
   --input: oklch(0.922 0.003 247);
@@ -95,6 +97,7 @@
   --success-foreground: oklch(0.15 0.02 160);
   --warning: oklch(0.80 0.15 78);
   --warning-foreground: oklch(0.22 0.04 75);
+  --today: oklch(0.58 0.16 255);
 
   --border: oklch(0.27 0.008 265);
   --input: oklch(0.30 0.008 265);
@@ -137,6 +140,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-today: var(--today);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
