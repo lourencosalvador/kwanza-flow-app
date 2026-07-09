@@ -87,14 +87,18 @@ export function CalendarView() {
                   className={cn(
                     "min-h-20 rounded-lg border p-1.5 text-left",
                     day ? "border-border/70" : "border-transparent",
-                    isToday && "border-primary/50 bg-primary/[0.04]",
+                    isToday && "border-foreground/30 bg-foreground/[0.03]",
                   )}
                 >
                   {day && (
                     <>
-                      <span className={cn("text-xs", isToday ? "font-semibold text-primary" : "text-muted-foreground")}>
-                        {day}
-                      </span>
+                      {isToday ? (
+                        <span className="inline-flex size-5 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">
+                          {day}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{day}</span>
+                      )}
                       <div className="mt-1 space-y-1">
                         {events.slice(0, 2).map((e, j) => (
                           <div
@@ -129,6 +133,9 @@ export function CalendarView() {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-muted-foreground" /> Pagamento
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-foreground" /> Hoje
         </span>
       </div>
     </div>
