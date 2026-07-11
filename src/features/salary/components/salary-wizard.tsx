@@ -150,7 +150,7 @@ export function SalaryWizard() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-xl" showClose>
+      <DialogContent className="flex max-h-[90dvh] max-w-xl flex-col overflow-hidden" showClose>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Banknote className="size-5 text-primary" /> Recebi salário
@@ -201,7 +201,7 @@ export function SalaryWizard() {
           })}
         </div>
 
-        <div className="min-h-[240px] py-2">
+        <div className="min-h-[240px] flex-1 overflow-y-auto py-2 pr-1">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
