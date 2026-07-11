@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/shared/page-header";
+import { PhoneLinkCard } from "@/features/push/components/phone-link-card";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useFinancialStore } from "@/store/financial-store";
@@ -224,6 +225,9 @@ export function SettingsView() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Notificações no telemóvel (Web Push) */}
+        <PhoneLinkCard />
       </div>
     </div>
   );

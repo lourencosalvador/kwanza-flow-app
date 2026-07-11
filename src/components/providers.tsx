@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/lib/query/provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { PWARegister } from "@/components/pwa-register";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryProvider>
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster position="top-right" richColors closeButton />
+        <PWARegister />
       </QueryProvider>
     </ThemeProvider>
   );

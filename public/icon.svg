@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="KwanzaFlow">
+  <rect width="512" height="512" rx="112" fill="#16a34a"/>
+  <g fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round">
+    <circle cx="256" cy="256" r="150"/>
+    <path d="M256 132 V380"/>
+    <path d="M312 188 c-30-26-82-26-112 0 c-30 26-30 62 0 88 c30 26 82 26 112 0"/>
+  </g>
+</svg>

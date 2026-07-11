@@ -8,6 +8,7 @@ export const env = {
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   appName: process.env.NEXT_PUBLIC_APP_NAME ?? "KwanzaFlow",
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
 };
 
 /** Server-only. Não importar em componentes de cliente. */
@@ -15,7 +16,13 @@ export const serverEnv = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   openaiModel: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+  vapidPublicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+  vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:app@kwanzaflow.local",
 };
+
+export const isPushConfigured =
+  !!env.vapidPublicKey && !!(process.env.VAPID_PRIVATE_KEY ?? "");
 
 /** Supabase está configurado? */
 export const isSupabaseConfigured =

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { isDemoMode } from "@/lib/env";
 
-const PUBLIC_PREFIXES = ["/login", "/auth", "/api"];
+const PUBLIC_PREFIXES = ["/login", "/auth", "/api", "/link"];
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);

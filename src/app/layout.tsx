@@ -23,6 +23,16 @@ export const metadata: Metadata = {
   description:
     "KwanzaFlow AI: sai do ciclo de dívidas, cria património e atinge as tuas missões financeiras com um consultor inteligente sempre disponível.",
   applicationName: "KwanzaFlow",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "KwanzaFlow",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
