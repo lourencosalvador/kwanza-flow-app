@@ -105,14 +105,14 @@ export default function LinkDevicePage() {
             <Button
               className="mt-5 w-full gap-2"
               onClick={activate}
-              disabled={state === "linking"}
+              disabled={state === "linking" || iosNeedsInstall}
             >
               {state === "linking" ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <BellRing className="size-4" />
               )}
-              Ativar notificações
+              {iosNeedsInstall ? "Instala a app primeiro" : "Ativar notificações"}
             </Button>
 
             {state === "error" && (

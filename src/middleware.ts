@@ -41,6 +41,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Exclui assets estáticos e ficheiros de PWA (sw.js, manifest) para que
+    // NUNCA sejam redirecionados para /login — senão o service worker e o
+    // manifesto falham a carregar (ex.: no telemóvel não autenticado em /link).
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|manifest.webmanifest|icon.svg|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
