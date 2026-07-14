@@ -19,7 +19,7 @@ async function ctx() {
   return { supabase, user };
 }
 
-const TOKEN_TTL_MIN = 10;
+const TOKEN_TTL_MIN = 30;
 
 /** Cria um token de ligação e devolve o URL para o QR. */
 export async function createDeviceLinkToken(): Promise<
