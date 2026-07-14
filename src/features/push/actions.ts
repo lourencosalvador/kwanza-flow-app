@@ -45,6 +45,36 @@ export async function createDeviceLinkToken(): Promise<
   };
 }
 
+/**
+ * Guarda a subscrição de push do PRÓPRIO utilizador autenticado (in-app).
+ * É o caminho fiável no iOS: dentro da app instalada, com sessão, sem QR.
+ */
+export async function savePushSubscription(sub: {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  platform?: string;
+  userAgent?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { supabase, user } = await ctx();
+  if (!user) return { ok: false, error: "Sessão necessária" };
+  if (!isPushConfigured) return { ok: false, error: "Push não configurado (VAPID)" };
+
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      user_id: user.id,
+      endpoint: sub.endpoint,
+      p256dh: sub.p256dh,
+      auth: sub.auth,
+      platform: sub.platform ?? null,
+      user_agent: sub.userAgent ?? null,
+    },
+    { onConflict: "endpoint" },
+  );
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 /** Envia uma notificação de teste para todos os dispositivos do utilizador. */
 export async function sendTestPush(): Promise<
   { ok: true; sent: number; failed: number } | { ok: false; error: string }
