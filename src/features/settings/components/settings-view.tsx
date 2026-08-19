@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/shared/page-header";
 import { PhoneLinkCard } from "@/features/push/components/phone-link-card";
+import { DangerZoneCard } from "@/features/settings/components/danger-zone-card";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/env";
 import { useFinancialStore } from "@/store/financial-store";
@@ -228,6 +229,9 @@ export function SettingsView() {
 
         {/* Notificações no telemóvel (Web Push) */}
         <PhoneLinkCard />
+
+        {/* Zona de perigo — apagar todos os dados */}
+        <DangerZoneCard />
       </div>
     </div>
   );

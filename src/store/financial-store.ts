@@ -57,6 +57,7 @@ import {
   updateSalary as updateSalaryServer,
   updateStrategy as updateStrategyServer,
   updateSubAccount as updateSubAccountServer,
+  wipeAllData as wipeAllDataServer,
 } from "@/features/shared/actions";
 
 /** Domínios que suportam "Limpar tudo" por página. */
@@ -144,6 +145,8 @@ interface FinancialState {
 
   /** Apaga todos os dados de um domínio (por página). Ação destrutiva. */
   clearDomain: (domain: ClearableDomain) => void;
+  /** Apaga TODOS os dados financeiros (mantém o perfil). Ação destrutiva. */
+  wipeAll: () => void;
   reset: () => void;
 }
 
@@ -744,6 +747,13 @@ export const useFinancialStore = create<FinancialState>()(
             return { snapshot };
           });
           sync(clearDomainServer(domain));
+        },
+
+        wipeAll: () => {
+          set((s) => ({
+            snapshot: { ...buildEmptySnapshot(), profile: s.snapshot.profile },
+          }));
+          sync(wipeAllDataServer());
         },
 
         reset: () => set({ snapshot: isDemoMode ? buildSeed() : buildEmptySnapshot() }),

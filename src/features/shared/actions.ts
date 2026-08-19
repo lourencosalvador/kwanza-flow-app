@@ -353,6 +353,31 @@ export async function clearDomain(
   }
 }
 
+/**
+ * Apaga TODOS os dados financeiros do utilizador (mantém perfil e sessão).
+ * Repõe a conta do zero. Ação destrutiva.
+ */
+export async function wipeAllData(): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const tables = [
+    "calendar_events",
+    "sub_accounts",
+    "transactions",
+    "plans",
+    "missions",
+    "goals",
+    "debts",
+    "recurring_payments",
+    "salaries",
+    "accounts",
+  ];
+  for (const t of tables) {
+    // Tabelas de migrações recentes podem não existir — ignora o erro.
+    await supabase.from(t).delete().eq("user_id", user.id);
+  }
+}
+
 /** Atualiza dados do perfil (nome, avatar). */
 export async function updateProfile(patch: {
   fullName?: string;
