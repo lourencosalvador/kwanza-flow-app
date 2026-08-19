@@ -5,7 +5,12 @@
 
 import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 import type { FinancialReport } from "@/lib/financial-engine/types";
-import type { BankAccount, Mission, SubAccount } from "@/types/domain";
+import type {
+  BankAccount,
+  CalendarEvent,
+  Mission,
+  SubAccount,
+} from "@/types/domain";
 
 export interface AdvisorContextInput {
   userName: string;
@@ -13,6 +18,7 @@ export interface AdvisorContextInput {
   missions: Mission[];
   accounts?: BankAccount[];
   subAccounts?: SubAccount[];
+  calendarEvents?: CalendarEvent[];
 }
 
 export function buildContextBlock({
@@ -21,6 +27,7 @@ export function buildContextBlock({
   missions,
   accounts = [],
   subAccounts = [],
+  calendarEvents = [],
 }: AdvisorContextInput): string {
   const { netWorth, cashFlow, budget, goals, debts, forecast, healthScore } =
     report;
@@ -85,6 +92,21 @@ export function buildContextBlock({
     const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "conta";
     subAccounts.forEach((s) => {
       lines.push(`- ${nameOf(s.accountId)} › ${s.name}: ${formatCurrency(s.balance)}`);
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = calendarEvents
+    .filter((e) => e.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 8);
+  if (upcoming.length) {
+    lines.push("");
+    lines.push("AGENDA (próximos eventos do utilizador):");
+    upcoming.forEach((e) => {
+      lines.push(
+        `- ${e.date}: ${e.title} (${e.kind}${e.amount != null ? `, ${formatCurrency(e.amount)}` : ""})`,
+      );
     });
   }
 

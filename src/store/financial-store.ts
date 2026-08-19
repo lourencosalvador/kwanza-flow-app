@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type {
   BankAccount,
+  CalendarEvent,
   Debt,
   FinancialSnapshot,
   Goal,
@@ -24,6 +25,7 @@ import {
   clearDomain as clearDomainServer,
   contributeGoal,
   createAccount,
+  createCalendarEvent as createCalendarEventServer,
   createDebt,
   createGoal,
   createMission,
@@ -33,6 +35,7 @@ import {
   createSubAccount as createSubAccountServer,
   createTransaction,
   deleteAccount as deleteAccountServer,
+  deleteCalendarEvent as deleteCalendarEventServer,
   deleteDebt as deleteDebtServer,
   deleteGoal as deleteGoalServer,
   deleteMission as deleteMissionServer,
@@ -44,6 +47,7 @@ import {
   payDebt as payDebtServer,
   setPrimaryMission as setPrimaryMissionServer,
   updateAccount as updateAccountServer,
+  updateCalendarEvent as updateCalendarEventServer,
   updateDebt as updateDebtServer,
   updateGoal as updateGoalServer,
   updateMission as updateMissionServer,
@@ -83,6 +87,11 @@ interface FinancialState {
   addSubAccount: (sub: Omit<SubAccount, "id" | "createdAt">) => void;
   updateSubAccount: (id: string, patch: Partial<Omit<SubAccount, "id" | "accountId" | "createdAt">>) => void;
   deleteSubAccount: (id: string) => void;
+
+  // Eventos de calendário
+  addCalendarEvent: (ev: Omit<CalendarEvent, "id" | "createdAt">) => void;
+  updateCalendarEvent: (id: string, patch: Partial<Omit<CalendarEvent, "id" | "createdAt">>) => void;
+  deleteCalendarEvent: (id: string) => void;
 
   // Transações
   addTransaction: (tx: Omit<Transaction, "id">) => void;
@@ -248,6 +257,40 @@ export const useFinancialStore = create<FinancialState>()(
             },
           }));
           sync(deleteSubAccountServer(id));
+        },
+
+        // ── Eventos de calendário ─────────────────────────────
+        addCalendarEvent: (ev) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              calendarEvents: [
+                ...s.snapshot.calendarEvents,
+                { ...ev, id: uid("cal"), createdAt: today() },
+              ],
+            },
+          }));
+          sync(createCalendarEventServer(ev));
+        },
+
+        updateCalendarEvent: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              calendarEvents: patchList(s.snapshot.calendarEvents, id, patch),
+            },
+          }));
+          sync(updateCalendarEventServer(id, patch));
+        },
+
+        deleteCalendarEvent: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              calendarEvents: s.snapshot.calendarEvents.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteCalendarEventServer(id));
         },
 
         // ── Transações ────────────────────────────────────────
@@ -728,6 +771,7 @@ export const useFinancialStore = create<FinancialState>()(
             missions: snap?.missions ?? base.missions,
             plans: snap?.plans ?? base.plans,
             subAccounts: snap?.subAccounts ?? base.subAccounts,
+            calendarEvents: snap?.calendarEvents ?? base.calendarEvents,
             profile: snap?.profile ?? base.profile,
           },
         };

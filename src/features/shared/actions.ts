@@ -9,6 +9,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type {
   BankAccount,
+  CalendarEvent,
   Debt,
   FinancialSnapshot,
   Goal,
@@ -22,6 +23,7 @@ import type {
 } from "@/types/domain";
 import {
   mapAccount,
+  mapCalendarEvent,
   mapDebt,
   mapGoal,
   mapMission,
@@ -76,6 +78,14 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
     subAccountsData = [];
   }
 
+  let calendarData: unknown[] = [];
+  try {
+    const calRes = await supabase.from("calendar_events").select("*").order("date");
+    if (Array.isArray(calRes.data)) calendarData = calRes.data;
+  } catch {
+    calendarData = [];
+  }
+
   return {
     profile: mapProfile(profileRes.data ?? { id: user.id }, user.email ?? ""),
     accounts: (accounts.data ?? []).map(mapAccount),
@@ -87,6 +97,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
     missions: (missions.data ?? []).map(mapMission),
     plans: plansData.map(mapPlan),
     subAccounts: subAccountsData.map(mapSubAccount),
+    calendarEvents: calendarData.map(mapCalendarEvent),
   };
 }
 
@@ -352,6 +363,44 @@ export async function updateStrategy(strategy: UserStrategy): Promise<void> {
   const { supabase, user } = await ctx();
   if (!user) return;
   await supabase.from("profiles").update({ strategy }).eq("id", user.id);
+}
+
+// ── Eventos de calendário ────────────────────────────────────
+export async function createCalendarEvent(
+  input: Omit<CalendarEvent, "id" | "createdAt">,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("calendar_events").insert({
+    user_id: user.id,
+    title: input.title,
+    date: input.date,
+    amount: input.amount ?? null,
+    kind: input.kind,
+    note: input.note ?? null,
+  });
+}
+
+export async function updateCalendarEvent(
+  id: string,
+  patch: Partial<Omit<CalendarEvent, "id" | "createdAt">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.title !== undefined) upd.title = patch.title;
+  if (patch.date !== undefined) upd.date = patch.date;
+  if (patch.amount !== undefined) upd.amount = patch.amount ?? null;
+  if (patch.kind !== undefined) upd.kind = patch.kind;
+  if (patch.note !== undefined) upd.note = patch.note ?? null;
+  if (Object.keys(upd).length)
+    await supabase.from("calendar_events").update(upd).eq("id", id);
+}
+
+export async function deleteCalendarEvent(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("calendar_events").delete().eq("id", id);
 }
 
 // ── Subcontas (envelopes) ────────────────────────────────────

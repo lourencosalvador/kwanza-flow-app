@@ -176,6 +176,19 @@ export interface Plan {
   createdAt: ISODate;
 }
 
+export type CalendarEventKind = "entrada" | "saida" | "lembrete";
+
+/** Evento de calendário livre (lembrete/compromisso), por data. */
+export interface CalendarEvent {
+  id: UUID;
+  title: string;
+  date: ISODate;
+  amount?: number;
+  kind: CalendarEventKind;
+  note?: string;
+  createdAt?: ISODate;
+}
+
 export type TimelineEventKind =
   | "salario"
   | "divida_quitada"
@@ -269,4 +282,5 @@ export interface FinancialSnapshot {
   missions: Mission[];
   plans: Plan[];
   subAccounts: SubAccount[];
+  calendarEvents: CalendarEvent[];
 }

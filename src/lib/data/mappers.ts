@@ -116,6 +116,18 @@ export function mapGoal(row: any): Goal {
   };
 }
 
+export function mapCalendarEvent(row: any): import("@/types/domain").CalendarEvent {
+  return {
+    id: row.id,
+    title: row.title,
+    date: row.date,
+    amount: row.amount != null ? num(row.amount) : undefined,
+    kind: row.kind ?? "lembrete",
+    note: row.note ?? undefined,
+    createdAt: row.created_at?.slice(0, 10) ?? undefined,
+  };
+}
+
 export function mapSubAccount(row: any): import("@/types/domain").SubAccount {
   return {
     id: row.id,

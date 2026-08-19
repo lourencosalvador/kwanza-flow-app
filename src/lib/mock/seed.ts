@@ -213,7 +213,12 @@ export function buildSeed(ref: Date = new Date()): FinancialSnapshot {
     { id: "sub-alim", accountId: "acc-atl", name: "Alimentação", balance: 60_000, icon: "UtensilsCrossed", color: "var(--chart-3)", createdAt: monthsAgo(1, 1, ref) },
   ];
 
-  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions, plans, subAccounts };
+  const calendarEvents = [
+    { id: "cal-1", title: "Renda trimestral", date: dayThisMonth(20, ref), amount: 210_000, kind: "saida" as const, note: "Pagamento do trimestre" },
+    { id: "cal-2", title: "Rever orçamento", date: dayThisMonth(25, ref), kind: "lembrete" as const },
+  ];
+
+  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions, plans, subAccounts, calendarEvents };
 }
 
 /** Snapshot vazio: estado inicial em modo live (dados vêm do Supabase). */
@@ -240,6 +245,7 @@ export function buildEmptySnapshot(): FinancialSnapshot {
     missions: [],
     plans: [],
     subAccounts: [],
+    calendarEvents: [],
   };
 }
 
