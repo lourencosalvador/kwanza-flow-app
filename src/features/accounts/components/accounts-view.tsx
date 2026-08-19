@@ -11,6 +11,7 @@ import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { EntityMenu } from "@/components/shared/entity-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AccountDialog } from "@/features/accounts/components/account-dialog";
+import { AccountEnvelopes } from "@/features/accounts/components/account-envelopes";
 import { useFinancialStore } from "@/store/financial-store";
 import { useMounted } from "@/hooks/use-financial-report";
 import { formatCurrency } from "@/lib/format";
@@ -121,6 +122,8 @@ export function AccountsView() {
                       <Progress value={pct} className="h-1.5" />
                     </div>
                   )}
+
+                  <AccountEnvelopes account={a} />
                 </CardContent>
               </Card>
             </motion.div>

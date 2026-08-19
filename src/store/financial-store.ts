@@ -11,6 +11,7 @@ import type {
   Plan,
   RecurringPayment,
   Salary,
+  SubAccount,
   Transaction,
   UserStrategy,
 } from "@/types/domain";
@@ -29,6 +30,7 @@ import {
   createPlan as createPlanServer,
   createRecurring as createRecurringServer,
   createSalary as createSalaryServer,
+  createSubAccount as createSubAccountServer,
   createTransaction,
   deleteAccount as deleteAccountServer,
   deleteDebt as deleteDebtServer,
@@ -37,6 +39,7 @@ import {
   deletePlan as deletePlanServer,
   deleteRecurring as deleteRecurringServer,
   deleteSalary as deleteSalaryServer,
+  deleteSubAccount as deleteSubAccountServer,
   fetchSnapshot,
   payDebt as payDebtServer,
   setPrimaryMission as setPrimaryMissionServer,
@@ -49,6 +52,7 @@ import {
   updateRecurring as updateRecurringServer,
   updateSalary as updateSalaryServer,
   updateStrategy as updateStrategyServer,
+  updateSubAccount as updateSubAccountServer,
 } from "@/features/shared/actions";
 
 /** Domínios que suportam "Limpar tudo" por página. */
@@ -74,6 +78,11 @@ interface FinancialState {
   addAccount: (acc: Omit<BankAccount, "id" | "createdAt">) => void;
   updateAccount: (id: string, patch: Partial<Omit<BankAccount, "id" | "createdAt">>) => void;
   deleteAccount: (id: string) => void;
+
+  // Subcontas (envelopes)
+  addSubAccount: (sub: Omit<SubAccount, "id" | "createdAt">) => void;
+  updateSubAccount: (id: string, patch: Partial<Omit<SubAccount, "id" | "accountId" | "createdAt">>) => void;
+  deleteSubAccount: (id: string) => void;
 
   // Transações
   addTransaction: (tx: Omit<Transaction, "id">) => void;
@@ -199,11 +208,46 @@ export const useFinancialStore = create<FinancialState>()(
             snapshot: {
               ...s.snapshot,
               accounts: s.snapshot.accounts.filter((a) => a.id !== id),
-              // Transações da conta caem junto (espelha o cascade da BD).
+              // Transações e subcontas da conta caem junto (espelha o cascade da BD).
               transactions: s.snapshot.transactions.filter((t) => t.accountId !== id),
+              subAccounts: s.snapshot.subAccounts.filter((x) => x.accountId !== id),
             },
           }));
           sync(deleteAccountServer(id));
+        },
+
+        // ── Subcontas (envelopes) ─────────────────────────────
+        addSubAccount: (sub) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              subAccounts: [
+                ...s.snapshot.subAccounts,
+                { ...sub, id: uid("sub"), createdAt: today() },
+              ],
+            },
+          }));
+          sync(createSubAccountServer(sub));
+        },
+
+        updateSubAccount: (id, patch) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              subAccounts: patchList(s.snapshot.subAccounts, id, patch),
+            },
+          }));
+          sync(updateSubAccountServer(id, patch));
+        },
+
+        deleteSubAccount: (id) => {
+          set((s) => ({
+            snapshot: {
+              ...s.snapshot,
+              subAccounts: s.snapshot.subAccounts.filter((x) => x.id !== id),
+            },
+          }));
+          sync(deleteSubAccountServer(id));
         },
 
         // ── Transações ────────────────────────────────────────
@@ -683,6 +727,7 @@ export const useFinancialStore = create<FinancialState>()(
             goals: snap?.goals ?? base.goals,
             missions: snap?.missions ?? base.missions,
             plans: snap?.plans ?? base.plans,
+            subAccounts: snap?.subAccounts ?? base.subAccounts,
             profile: snap?.profile ?? base.profile,
           },
         };

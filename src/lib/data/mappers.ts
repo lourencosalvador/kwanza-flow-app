@@ -116,6 +116,18 @@ export function mapGoal(row: any): Goal {
   };
 }
 
+export function mapSubAccount(row: any): import("@/types/domain").SubAccount {
+  return {
+    id: row.id,
+    accountId: row.account_id,
+    name: row.name,
+    balance: num(row.balance),
+    icon: row.icon ?? "Wallet",
+    color: row.color ?? "var(--chart-1)",
+    createdAt: row.created_at?.slice(0, 10) ?? undefined,
+  };
+}
+
 export function mapPlan(row: any): import("@/types/domain").Plan {
   const tasks = Array.isArray(row.tasks) ? row.tasks : [];
   return {

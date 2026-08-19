@@ -5,18 +5,22 @@
 
 import { formatCurrency, formatMonths, formatPercent } from "@/lib/format";
 import type { FinancialReport } from "@/lib/financial-engine/types";
-import type { Mission } from "@/types/domain";
+import type { BankAccount, Mission, SubAccount } from "@/types/domain";
 
 export interface AdvisorContextInput {
   userName: string;
   report: FinancialReport;
   missions: Mission[];
+  accounts?: BankAccount[];
+  subAccounts?: SubAccount[];
 }
 
 export function buildContextBlock({
   userName,
   report,
   missions,
+  accounts = [],
+  subAccounts = [],
 }: AdvisorContextInput): string {
   const { netWorth, cashFlow, budget, goals, debts, forecast, healthScore } =
     report;
@@ -74,6 +78,15 @@ export function buildContextBlock({
   lines.push("");
   lines.push("PREVISÃO:");
   lines.push(`- Em ${forecast.horizonMonths} meses: património ~${formatCurrency(forecast.projectedNetWorth)}, poupança ~${formatCurrency(forecast.projectedSavings)}`);
+
+  if (subAccounts.length) {
+    lines.push("");
+    lines.push("SUBCONTAS (envelopes dentro das contas):");
+    const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "conta";
+    subAccounts.forEach((s) => {
+      lines.push(`- ${nameOf(s.accountId)} › ${s.name}: ${formatCurrency(s.balance)}`);
+    });
+  }
 
   lines.push("");
   lines.push("MISSÃO PRINCIPAL:");

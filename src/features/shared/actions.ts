@@ -16,6 +16,7 @@ import type {
   Plan,
   RecurringPayment,
   Salary,
+  SubAccount,
   Transaction,
   UserStrategy,
 } from "@/types/domain";
@@ -28,6 +29,7 @@ import {
   mapProfile,
   mapRecurring,
   mapSalary,
+  mapSubAccount,
   mapTransaction,
 } from "@/lib/data/mappers";
 
@@ -56,14 +58,22 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
       supabase.from("missions").select("*").order("created_at"),
     ]);
 
-  // A tabela `plans` (migração 0002) pode ainda não existir — isolada para que
-  // a sua ausência NUNCA afete o carregamento das restantes secções.
+  // Tabelas de migrações mais recentes (0002/0006) podem ainda não existir —
+  // isoladas para que a sua ausência NUNCA afete o resto do carregamento.
   let plansData: unknown[] = [];
   try {
     const plansRes = await supabase.from("plans").select("*").order("created_at");
     if (Array.isArray(plansRes.data)) plansData = plansRes.data;
   } catch {
     plansData = [];
+  }
+
+  let subAccountsData: unknown[] = [];
+  try {
+    const subRes = await supabase.from("sub_accounts").select("*").order("created_at");
+    if (Array.isArray(subRes.data)) subAccountsData = subRes.data;
+  } catch {
+    subAccountsData = [];
   }
 
   return {
@@ -76,6 +86,7 @@ export async function fetchSnapshot(): Promise<FinancialSnapshot | null> {
     goals: (goals.data ?? []).map(mapGoal),
     missions: (missions.data ?? []).map(mapMission),
     plans: plansData.map(mapPlan),
+    subAccounts: subAccountsData.map(mapSubAccount),
   };
 }
 
@@ -341,6 +352,42 @@ export async function updateStrategy(strategy: UserStrategy): Promise<void> {
   const { supabase, user } = await ctx();
   if (!user) return;
   await supabase.from("profiles").update({ strategy }).eq("id", user.id);
+}
+
+// ── Subcontas (envelopes) ────────────────────────────────────
+export async function createSubAccount(
+  input: Omit<SubAccount, "id" | "createdAt">,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("sub_accounts").insert({
+    user_id: user.id,
+    account_id: input.accountId,
+    name: input.name,
+    balance: input.balance,
+    icon: input.icon,
+    color: input.color,
+  });
+}
+
+export async function updateSubAccount(
+  id: string,
+  patch: Partial<Omit<SubAccount, "id" | "accountId" | "createdAt">>,
+): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  const upd: Record<string, unknown> = {};
+  if (patch.name !== undefined) upd.name = patch.name;
+  if (patch.balance !== undefined) upd.balance = patch.balance;
+  if (patch.icon !== undefined) upd.icon = patch.icon;
+  if (patch.color !== undefined) upd.color = patch.color;
+  if (Object.keys(upd).length) await supabase.from("sub_accounts").update(upd).eq("id", id);
+}
+
+export async function deleteSubAccount(id: string): Promise<void> {
+  const { supabase, user } = await ctx();
+  if (!user) return;
+  await supabase.from("sub_accounts").delete().eq("id", id);
 }
 
 // ─────────────────────────────────────────────────────────────

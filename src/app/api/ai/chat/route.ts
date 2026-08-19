@@ -5,7 +5,7 @@ import { buildContextBlock } from "@/lib/ai/context-builder";
 import { streamAdvisor, type AdvisorMessage } from "@/lib/ai/openai";
 import { localAdvice } from "@/lib/ai/local-advisor";
 import type { FinancialReport } from "@/lib/financial-engine/types";
-import type { Mission } from "@/types/domain";
+import type { BankAccount, Mission, SubAccount } from "@/types/domain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +15,8 @@ interface ChatBody {
   report: FinancialReport;
   missions: Mission[];
   userName: string;
+  accounts?: BankAccount[];
+  subAccounts?: SubAccount[];
 }
 
 const encoder = new TextEncoder();
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     return new Response("Pedido inválido", { status: 400 });
   }
 
-  const { messages, report, missions, userName } = body;
+  const { messages, report, missions, userName, accounts, subAccounts } = body;
   if (!messages?.length || !report) {
     return new Response("Dados em falta", { status: 400 });
   }
@@ -71,6 +73,8 @@ export async function POST(req: NextRequest) {
     userName: userName ?? "Utilizador",
     report,
     missions: missions ?? [],
+    accounts: accounts ?? [],
+    subAccounts: subAccounts ?? [],
   });
   const instructions = buildAdvisorInstructions(contextBlock);
 

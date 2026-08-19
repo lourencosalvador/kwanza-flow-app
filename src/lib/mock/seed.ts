@@ -208,7 +208,12 @@ export function buildSeed(ref: Date = new Date()): FinancialSnapshot {
     },
   ];
 
-  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions, plans };
+  const subAccounts = [
+    { id: "sub-lazer", accountId: "acc-atl", name: "Lazer", balance: 10_000, icon: "PartyPopper", color: "var(--chart-4)", createdAt: monthsAgo(1, 1, ref) },
+    { id: "sub-alim", accountId: "acc-atl", name: "Alimentação", balance: 60_000, icon: "UtensilsCrossed", color: "var(--chart-3)", createdAt: monthsAgo(1, 1, ref) },
+  ];
+
+  return { profile, accounts, transactions, salaries, debts, recurring, goals, missions, plans, subAccounts };
 }
 
 /** Snapshot vazio: estado inicial em modo live (dados vêm do Supabase). */
@@ -234,6 +239,7 @@ export function buildEmptySnapshot(): FinancialSnapshot {
     goals: [],
     missions: [],
     plans: [],
+    subAccounts: [],
   };
 }
 

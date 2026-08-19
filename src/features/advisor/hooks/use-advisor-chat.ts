@@ -45,6 +45,8 @@ export function useAdvisorChat() {
             report,
             missions: snapshot.missions,
             userName: snapshot.profile.fullName,
+            accounts: snapshot.accounts,
+            subAccounts: snapshot.subAccounts,
           }),
         });
 

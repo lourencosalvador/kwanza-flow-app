@@ -51,6 +51,17 @@ export interface BankAccount {
   createdAt: ISODate;
 }
 
+/** Subconta ("envelope"): uma divisão nomeada do saldo de uma conta. */
+export interface SubAccount {
+  id: UUID;
+  accountId: UUID;
+  name: string; // "Lazer", "Alimentação"
+  balance: number; // parte do saldo da conta reservada a este envelope
+  icon: string;
+  color: string;
+  createdAt?: ISODate;
+}
+
 export type TransactionType = "receita" | "despesa" | "transferencia";
 
 export interface Transaction {
@@ -257,4 +268,5 @@ export interface FinancialSnapshot {
   goals: Goal[];
   missions: Mission[];
   plans: Plan[];
+  subAccounts: SubAccount[];
 }
