@@ -12,6 +12,7 @@ import { EntityMenu } from "@/components/shared/entity-menu";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SalaryDialog } from "@/features/salary/components/salary-dialog";
 import { RecurringDialog } from "@/features/salary/components/recurring-dialog";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { StrategyDialog } from "@/features/salary/components/strategy-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useFinancialReport, useMounted } from "@/hooks/use-financial-report";
@@ -178,7 +179,14 @@ export function SalaryView() {
             <CardTitle className="flex items-center gap-2 text-base">
               <Receipt className="size-4" /> Pagamentos recorrentes
             </CardTitle>
-            <RecurringDialog />
+            <div className="flex items-center gap-2">
+              <ClearAllButton
+                domain="recurring"
+                itemsLabel="todos os pagamentos recorrentes"
+                count={snapshot.recurring.length}
+              />
+              <RecurringDialog />
+            </div>
           </CardHeader>
           <CardContent className="space-y-1 pt-2">
             {snapshot.recurring.length === 0 && (

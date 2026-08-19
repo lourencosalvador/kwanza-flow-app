@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
+import { ClearAllButton } from "@/components/shared/clear-all-button";
 import { CalendarEventDialog } from "@/features/calendar/components/calendar-event-dialog";
 import { useFinancialStore } from "@/store/financial-store";
 import { useMounted } from "@/hooks/use-financial-report";
@@ -113,16 +114,23 @@ export function CalendarView() {
         title="Calendário"
         description="Salários e pagamentos são automáticos. Adiciona os teus próprios eventos e lembretes."
         action={
-          <Button
-            className="gap-1.5"
-            onClick={() => {
-              setDialogEvent(null);
-              setDialogDate(`${year}-${pad(month + 1)}-${pad(Math.min(today, 28))}`);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="size-4" /> Novo evento
-          </Button>
+          <>
+            <ClearAllButton
+              domain="calendar"
+              itemsLabel="todos os teus eventos do calendário"
+              count={snapshot.calendarEvents.length}
+            />
+            <Button
+              className="gap-1.5"
+              onClick={() => {
+                setDialogEvent(null);
+                setDialogDate(`${year}-${pad(month + 1)}-${pad(Math.min(today, 28))}`);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="size-4" /> Novo evento
+            </Button>
+          </>
         }
       />
 

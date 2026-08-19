@@ -323,7 +323,14 @@ export async function payDebt(params: {
 }
 
 export async function clearDomain(
-  domain: "accounts" | "salaries" | "debts" | "goals" | "missions",
+  domain:
+    | "accounts"
+    | "salaries"
+    | "debts"
+    | "goals"
+    | "missions"
+    | "recurring"
+    | "calendar",
 ): Promise<void> {
   const { supabase, user } = await ctx();
   if (!user) return;
@@ -334,6 +341,8 @@ export async function clearDomain(
     debts: "debts",
     goals: "goals",
     missions: "missions",
+    recurring: "recurring_payments",
+    calendar: "calendar_events",
   }[domain];
 
   await supabase.from(table).delete().eq("user_id", user.id);

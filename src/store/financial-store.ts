@@ -65,7 +65,9 @@ export type ClearableDomain =
   | "salaries"
   | "debts"
   | "goals"
-  | "missions";
+  | "missions"
+  | "recurring"
+  | "calendar";
 
 interface FinancialState {
   snapshot: FinancialSnapshot;
@@ -731,6 +733,12 @@ export const useFinancialStore = create<FinancialState>()(
                 break;
               case "missions":
                 snapshot.missions = [];
+                break;
+              case "recurring":
+                snapshot.recurring = [];
+                break;
+              case "calendar":
+                snapshot.calendarEvents = [];
                 break;
             }
             return { snapshot };
